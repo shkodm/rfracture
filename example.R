@@ -1,9 +1,11 @@
 source("seam_geom.R")
 library(rgl)
 
-refine = 64
-obj = seam_geom(refine,seed=123)
+refine = 8
+obj = seam.geom(refine,seed=123)
 seam3d(seam.cut(obj))
+
+seam.volume(seam.cut(obj))
 
 fname = sprintf("~/seam0_R%02d",refine)
 
@@ -21,3 +23,4 @@ save.msh(obj, paste0(fname,"_bottom.msh"), type="bottom")
 
 seam3d(seam.cut(obj))
 writeSTL(paste0(fname,"_cut.stl"))
+

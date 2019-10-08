@@ -1,4 +1,4 @@
-seam_geom = function(refine=1,
+seam.geom = function(refine=1,
                      totalScale = 0.2,
                      surfaceScale = 0.13,
                      centerlineScale = 0.0,
@@ -215,3 +215,11 @@ seam.cut = function(obj, eps = 1e-9){
   ret
 }
 
+seam.volume = function(obj) {
+  v = obj$points[,c("x","y")]
+  v1 = v[obj$triangles[,2],] - v[obj$triangles[,1],]
+  v2 = v[obj$triangles[,3],] - v[obj$triangles[,1],]
+  a = abs(1/2*(v1[,1]*v2[,2] - v1[,2]*v2[,1]))
+  h = 1/3*(obj$points$h[obj$triangles[,1]] + obj$points$h[obj$triangles[,2]] + obj$points$h[obj$triangles[,3]])
+  sum(a*h)
+}
