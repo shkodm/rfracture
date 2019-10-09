@@ -10,7 +10,9 @@ seam.geom = function(refine=1,
                      surfaceRadius1 = 0.05,
                      surfaceRadius2 = 0.01,
                      surfaceRatio = 0.90,
-                     seed=0) {
+                     seed=0,
+                     shape1=2,
+                     shape2=2) {
   
   bonds = c(centerlineMean - centerlineScale/2 - (gapMean+gapScale/2)/2 - surfaceScale/2,
             centerlineMean + centerlineScale/2 + (gapMean+gapScale/2)/2 + surfaceScale/2)
@@ -68,14 +70,17 @@ seam.geom = function(refine=1,
   centerlineField = beta_random_field(1,
                                       scale = centerlineScale,
                                       radius = centerlineRadius,
-                                      mean = centerlineMean)
+                                      mean = centerlineMean,
+                                      shape1=shape1, shape2=shape2)
          gapField = beta_random_field(2,
                                       scale = gapScale,
                                       radius = gapRadius,
-                                      mean = gapMean)
+                                      mean = gapMean,
+                                      shape1=shape1, shape2=shape2)
      surfaceField = beta_random_field(3,
                                       scale = surfaceScale,
-                                      K=conv.exp(surfaceRadius1,surfaceRatio)+conv.exp(surfaceRadius2,1-surfaceRatio))
+                                      K=conv.exp(surfaceRadius1,surfaceRatio)+conv.exp(surfaceRadius2,1-surfaceRatio),
+                                      shape1=shape1, shape2=shape2)
   
      
   f1 = centerlineField[[1]] + gapField[[1]]/2 + surfaceField[[1]]
