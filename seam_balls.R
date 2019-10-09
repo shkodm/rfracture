@@ -10,7 +10,8 @@ seam.balls = function(obj,
                       relax_iterations = 10,
                       max_add = 200,
                       overshot = 100,
-                      seed=0) {
+                      seed=0,mean.neighbor = 5,
+                      iterations=ceiling(1.5*K/max_add)) {
   P = obj$points
   i = obj$triangles
   T = data.frame(i1=i[,1],i2=i[,2],i3=i[,3])
@@ -28,7 +29,7 @@ seam.balls = function(obj,
   ndel = 100
   dlog = NULL
   set.seed(seed)
-  for (iterations in 1:600) {
+  for (iterations in seq_along(iterations)) {
     if (K+ndel > nrow(B)) {
       k = min(K + overshot - nrow(B), max_add)
       p = pmax(0, T$h - 2 * (Rmin+margin))
@@ -63,12 +64,14 @@ seam.balls = function(obj,
     for (i in seq_len(relax_iterations + 1)) {
       X[,2] = X[,2] %% 1
       X[,3] = X[,3] %% 1
-      ds = fields.rdist.near(X, X[1:n,], delta = 2*(Rmax+margin_opt),mean.neighbor = 5,max.points = 15*n)
+      #print(dim(X))
+      ds = fields.rdist.near(X, X[1:n,], delta = 2*(Rmax+margin_opt),mean.neighbor = mean.neighbor,max.points = mean.neighbor*n)
       tds = data.frame(v = ds$ra, i = ds$ind[,1], j = ds$ind[,2])
       sel = tds$i > tds$j
       tds = tds[sel,,drop=FALSE]
       tds$iball = Xi[tds$i]
       tds$v = tds$v - ifelse(tds$iball > 0, B$r[tds$iball], 0) - B$r[tds$j]
+      #print(range(tds$v))
       if (i == 1) start_ds = { if (nrow(tds) > 0) min(tds$v) else Inf }
       if (all(tds$v > 0) || i == relax_iterations + 1) {
         finish_ds = { if (nrow(tds) > 0) min(tds$v) else Inf }
@@ -77,6 +80,9 @@ seam.balls = function(obj,
       }
       p = X[tds$i,,drop=FALSE] - X[tds$j,,drop=FALSE]
       pl = sqrt(rowSums(p^2))
+      sel = pl > 1e-10
+      #print(sum(!sel))
+      p = p[sel,]; pl = pl[sel]; tds = tds[sel,]
       p = p / pl * pmax(0,margin - tds$v)
       p = rbind(-p,p)
       pi = c(tds$j,tds$iball)
@@ -86,6 +92,8 @@ seam.balls = function(obj,
       p = sapply(1:3, function(k) tapply(p[,k],pi,mean))
       pi = tapply(pi,pi,mean)
       X[pi,] = X[pi,] + p
+      #print(range(p))
+      #print(range(pi))
     }
     B[, c("x", "y", "z")] = X[1:n,]
     o = order(tds$v)

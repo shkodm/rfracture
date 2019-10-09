@@ -25,7 +25,7 @@ for (refine in c(1,2,4,8,16,32)) {
 
 source("seam_balls.R")
 
-B = seam.balls(obj,3000)
+B = seam.balls(obj,3000,Rmax = 0.02,Rmin=0.02,mean.neighbor = 500,iterations = 1)
 seam3d(seam.cut(obj))
 spheres3d(B$x, B$y, B$z, col = "green", radius = B$r)
 #triangles3d(P$f2[iv], P$x[iv], P$y[iv], col = 1,alpha=0.7)
