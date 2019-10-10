@@ -90,7 +90,7 @@ ogilve.corr.profile = function(ML=0.5, TL=0, MinMF=0, MaxMF=1) function(lambda) 
 }
 
 # spectral density based on Brown: Simple mathematical model of a rough fracture
-seam.geom.brown = function(scale=1, alpha=2, corr.profile, closed=0.1, gap=NA)  function(refine,seed) {
+seam.geom.brown = function(scale=1, alpha=2, corr.profile, closed=0.1, gap=NA, beta.make = FALSE, beta.shape = 4)  function(refine,seed) {
   n = 6 * refine
   m = 5 * refine
   
@@ -118,11 +118,28 @@ seam.geom.brown = function(scale=1, alpha=2, corr.profile, closed=0.1, gap=NA)  
   RN = ordered_rnorm_mat(N,M,3,seed=seed)
   f1 = fft(K*(cos(a)*RN[[1]] + sin(a)*RN[[2]]),inverse=TRUE)
   f2 = fft(K*(sin(a)*RN[[1]] + cos(a)*RN[[2]]),inverse=TRUE)
-  diffvar = sum(2 * K^2 * (cos(a)-sin(a))^2)
-  if (is.na(gap)) gap = -qnorm(closed,mean=0,sd=sqrt(diffvar))
-  f1 = Re(f1) + gap/2
-  f2 = Re(f2) - gap/2
-    
+  f1 = Re(f1)
+  f2 = Re(f2)
+  diff_sd = sqrt(sum(2 * K^2 * (cos(a)-sin(a))^2))
+  sum_sd = sqrt(sum(2 * K^2 * (cos(a)+sin(a))^2))
+  if (beta.make) {
+    fsum = f1 + f2
+    fdiff = f1 - f2
+    beta_sd = sqrt(1/(4*(2*shape+1)))
+    cat("Centerline scale:",1/beta_sd*sum_sd/2,"\n")
+    fsum = (qbeta(pnorm(fsum,sd=sum_sd),shape1=shape,shape2=shape)-0.5)/beta_sd*sum_sd
+    cat("Gap scale:",1/beta_sd*diff_sd,"\n")
+    fdiff = (qbeta(pnorm(fdiff,sd=diff_sd),shape1=shape,shape2=shape)-qbeta(closed,shape1=shape,shape2=shape))/beta_sd*diff_sd
+    f1 = (fsum + fdiff)/2
+    f2 = (fsum - fdiff)/2
+    max_fdiff = (1-qbeta(closed,shape1=shape,shape2=shape))/beta_sd*diff_sd
+    cat("Max gap:", max_fdiff,"\n")
+    cat("Bonds from beta:",(0.5/beta_sd*sum_sd + max_fdiff)/2,-(0.5/beta_sd*sum_sd + max_fdiff)/2,"\n")
+  } else {
+    if (is.na(gap)) gap = -qnorm(closed,mean=0,sd=diff_sd)
+    f1 = f1 + gap/2
+    f2 = f2 - gap/2
+  }
   list(f1 = f1,
        f2 = f2)
 }
