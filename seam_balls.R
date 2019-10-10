@@ -5,13 +5,15 @@ seam.balls = function(obj,
                       K = 4000,
                       Rmax = 0.01,
                       Rmin = 0.01,
+                      B = data.frame(),
                       margin = 0.003,
                       margin_opt = margin/3,
                       relax_iterations = 10,
                       max_add = 200,
                       overshot = 100,
                       seed=0,mean.neighbor = 5,
-                      iterations=ceiling(1.5*K/max_add)) {
+                      iterations = ceiling(1.5*K/max_add),
+                      delete=TRUE) {
   P = obj$points
   i = obj$triangles
   T = data.frame(i1=i[,1],i2=i[,2],i3=i[,3])
@@ -25,11 +27,11 @@ seam.balls = function(obj,
   sel = sel & (P$y[T$i1] < 1 & P$y[T$i2] < 1 & P$y[T$i3] < 1)
   T = T[sel,]
 
-  B = data.frame()
+  
   ndel = 100
   dlog = NULL
   set.seed(seed)
-  for (iterations in seq_along(iterations)) {
+  for (iteration in seq_len(iterations)) {
     if (K+ndel > nrow(B)) {
       k = min(K + overshot - nrow(B), max_add)
       p = pmax(0, T$h - 2 * (Rmin+margin))
@@ -55,22 +57,23 @@ seam.balls = function(obj,
     }
   
     n = nrow(B)
-    X = cbind(
-      c(B$x, B$x,   B$x, B$x,   P$f1, P$f2),
-      c(B$y, B$y+1, B$y, B$y+1, P$x , P$x ),
-      c(B$z, B$z, B$z+1, B$z+1, P$y , P$y ))
     Xi = c(1:n,1:n,1:n,1:n,rep(0,2*nrow(P)))
+    N = n*4
     start_ds = Inf
     for (i in seq_len(relax_iterations + 1)) {
-      X[,2] = X[,2] %% 1
-      X[,3] = X[,3] %% 1
+      X = cbind(
+        c(B$x, B$x,   B$x, B$x,   P$f1, P$f2),
+        c(B$y, B$y+1, B$y, B$y+1, P$x , P$x ),
+        c(B$z, B$z, B$z+1, B$z+1, P$y , P$y ))
       #print(dim(X))
-      ds = fields.rdist.near(X, X[1:n,], delta = 2*(Rmax+margin_opt),mean.neighbor = mean.neighbor,max.points = mean.neighbor*n)
-      tds = data.frame(v = ds$ra, i = ds$ind[,1], j = ds$ind[,2])
+      ds = fields.rdist.near(X[1:N,], X[1:n,], delta = 2*(Rmax+margin_opt),mean.neighbor = mean.neighbor,max.points = mean.neighbor*n)
+      tds = data.frame(d = ds$ra, i = ds$ind[,1], j = ds$ind[,2])
+      ds = fields.rdist.near(X[(N+1):nrow(X),], X[1:n,], delta = Rmax+margin_opt, mean.neighbor = mean.neighbor, max.points = mean.neighbor*n)
+      tds = rbind(tds, data.frame(d = ds$ra, i = ds$ind[,1]+N, j = ds$ind[,2]))
       sel = tds$i > tds$j
       tds = tds[sel,,drop=FALSE]
       tds$iball = Xi[tds$i]
-      tds$v = tds$v - ifelse(tds$iball > 0, B$r[tds$iball], 0) - B$r[tds$j]
+      tds$v = tds$d - ifelse(tds$iball > 0, B$r[tds$iball], 0) - B$r[tds$j]
       #print(range(tds$v))
       if (i == 1) start_ds = { if (nrow(tds) > 0) min(tds$v) else Inf }
       if (all(tds$v > 0) || i == relax_iterations + 1) {
@@ -80,9 +83,11 @@ seam.balls = function(obj,
       }
       p = X[tds$i,,drop=FALSE] - X[tds$j,,drop=FALSE]
       pl = sqrt(rowSums(p^2))
-      sel = pl > 1e-10
-      #print(sum(!sel))
-      p = p[sel,]; pl = pl[sel]; tds = tds[sel,]
+      sel = pl < 1e-10
+      if (any(sel)) {
+        cat("Some zero distances\n")
+        p = p[!sel,]; pl = pl[!sel]; tds = tds[!sel,]
+      }
       p = p / pl * pmax(0,margin - tds$v)
       p = rbind(-p,p)
       pi = c(tds$j,tds$iball)
@@ -90,23 +95,28 @@ seam.balls = function(obj,
       p = p[sel,,drop=FALSE]
       pi = pi[sel]
       p = sapply(1:3, function(k) tapply(p[,k],pi,mean))
-      pi = tapply(pi,pi,mean)
+      pi = tapply(pi,pi,function(x)x[1])
       X[pi,] = X[pi,] + p
       #print(range(p))
       #print(range(pi))
+      B$x = X[1:n,1]
+      B$y = X[1:n,2] %% 1
+      B$z = X[1:n,3] %% 1
     }
-    B[, c("x", "y", "z")] = X[1:n,]
-    o = order(tds$v)
-    tds = tds[o,]
-    tds = tds[tds$v < 0,]
-    delsel = NULL
-    while(nrow(tds) > 0) {
-      sel = tds$i[1]
-      delsel = c(delsel, sel)
-      tds = tds[tds$i != sel & tds$j != sel, , drop = FALSE]
+    #return (list(B,tds,X))
+    if (delete) {
+      delsel = NULL
+      o = order(tds$v)
+      tds = tds[o,]
+      tds = tds[tds$v < 0,]
+      while(nrow(tds) > 0) {
+        sel = tds$j[1]
+        delsel = c(delsel, sel)
+        tds = tds[tds$iball != sel & tds$j != sel, , drop = FALSE]
+      }
+      cat("Deleted", length(delsel), "balls\n")
+      if (length(delsel) > 0)  B = B[-delsel,]
     }
-    cat("Deleted", length(delsel), "balls\n")
-    if (length(delsel) > 0)  B = B[-delsel,]
     dlog = rbind(dlog,data.frame(n=nrow(B)))
     plot(dlog$n)
     if (nrow(B) >= K) {
