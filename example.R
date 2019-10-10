@@ -1,9 +1,23 @@
-source("seam_geom.R")
 library(rgl)
+
+source("seam_geom.R")
+obj = seam.geom(
+                  refine = 64,
+                  seed=234,
+                  generator = seam.geom.brown(
+                    scale=0.04,
+                    alpha = 2.3,
+                    corr.profile = ogilve.corr.profile(ML=0.5, TL=0.3, MaxMF=0.9, MinMF=0.1),
+                    closed = 0.1
+                  )
+                )
+seam3d(seam.cut(obj))
+
 
 shape=4
 for (refine in c(1,2,4,8,16,32)) {
-  obj = seam.geom(refine,seed=234,shape1=shape,shape2=shape)
+#  obj = seam.geom(refine,seed=234,generator=seam.geom.my())
+  obj = seam.geom(refine,seed=234,generator=seam.geom.brown())
   seam3d(seam.cut(obj))
   seam.volume(seam.cut(obj))
   
@@ -24,8 +38,15 @@ for (refine in c(1,2,4,8,16,32)) {
 
 
 source("seam_balls.R")
+Rmax = 0.02
+Rmin = 0.02
+B = seam.balls(obj,3000,Rmax = Rmax,Rmin=Rmin,mean.neighbor = 500,iterations = 40,margin = 0,margin_opt = 0,max_add = 30)
+#tds = B[[2]]
+#X = B[[3]]
+#B = B[[1]]
+#points3d(X)
 
-B = seam.balls(obj,3000,Rmax = 0.02,Rmin=0.02,mean.neighbor = 500,iterations = 1)
+
 seam3d(seam.cut(obj))
 spheres3d(B$x, B$y, B$z, col = "green", radius = B$r)
 #triangles3d(P$f2[iv], P$x[iv], P$y[iv], col = 1,alpha=0.7)
