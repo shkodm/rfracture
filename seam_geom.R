@@ -7,12 +7,16 @@ ordered_rnorm_mat = function(N, M, k=1, seed, length_one=FALSE) {
   o = order(pmax(abs(fpZ$i),abs(fpZ$j)),atan2(fpZ$i,fpZ$j))
   lapply(1:k-1, function(i) {
     z = RN[,2*i+1] + 1i*RN[,2*i+2]
-    if (length_one) z = z/Mod(z)
     R[o] = z
+    if (length_one) {
+      I = matrix(1:length(R),nrow(R),ncol(R))
+      I2 = I[c(1,nrow(R):2),c(1,ncol(R):2)]
+      R2 = Conj(R[c(1,nrow(R):2),c(1,ncol(R):2)])
+      R[] = ifelse(I == I2, 0, (R + R2)/Mod(R+R2))
+    }
     R
   })
 }
-
 
 seam.geom.my = function(totalScale = 0.2,
                        surfaceScale = 0.13,
