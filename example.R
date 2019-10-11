@@ -9,14 +9,11 @@ for (refine in c(1,2,4,8,16,32)) {
   obj = seam.geom(
     refine = refine,
     seed=234,
-    generator = seam.geom.brown(
-      scale=0.04,
-      alpha = 2.3,
-      corr.profile = ogilve.corr.profile(ML=0.5, TL=0.3, MaxMF=0.9, MinMF=0.1),
-      closed = 0.1,
-      beta.make=TRUE
-    )
+    spectrum=exp.spectrum(scale = 0.04, alpha = 2.3),
+    corr.profile = ogilve.corr.profile(ML=0.5, TL=0.3, MaxMF=0.9, MinMF=0.1),
+    closed = 0.1,
   )
+  seam3d(obj)
   seam3d(seam.cut(obj))
   seam.volume(seam.cut(obj))
   

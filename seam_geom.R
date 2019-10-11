@@ -149,28 +149,79 @@ seam.geom.brown = function(scale=1, alpha=2, corr.profile, closed=0.1, gap=NA, b
   list(f1 = f1,
        f2 = f2)
 }
-    
 
-seam.geom = function(refine=1,
-                     generator,
-                     seed=0) {
+
+plot.seam_field = function(obj, field="f1", col.palette=c("black","red","yellow"), pch=16, cex=1, asp=1, ...){
+  col = as.vector(obj[[field]])
+  col = (col-min(col))/(max(col)-min(col))
+  col = colorRamp(col.palette)(col)
+  col = rgb(col,max=255)
+  plot(obj$points[,1], obj$points[,2], col=col,pch=pch,cex=cex,asp=asp,...)
+  abline(h=-5:5); abline(v=-5:5)
+  arrows(0,0,obj$mat[,1],obj$mat[,2],angle = 15)
+}
+
+
+exp.spectrum = function(scale=1, alpha=2) function(k) scale/(k^alpha)
+
+seam.geom.fields = function(
+    N, M,
+    mat = diag(c(1,1)),
+    A = diag(c(1/N,1/M)) %*% mat,
+    spectrum = exp.spectrum(),
+    corr.profile = function(k) 0,
+    closed = 0.1,
+    gap = NA,
+    seed,
+    length_one = FALSE) {
+  p = as.matrix(expand.grid(x = 1:N-1, y = 1:M-1))
+  pA = p %*% A
+  circ = function(n) { x = 1:n-1; ifelse(x > n/2, x-n, x)/n }
+  f = as.matrix(expand.grid(x = circ(N), y = circ(M)))
+  fA = f %*% solve(t(A))
+  
+  sel = rowSums(abs(round(fA) - fA) > 1e-6) == 0
+  Scales = data.frame(
+    i  = (1:nrow(fA))[sel],
+    kx = as.integer(fA[sel,1]),
+    ky = as.integer(fA[sel,2]))
+  Scales$k = sqrt(Scales$kx^2 + Scales$ky^2)
+  Scales = Scales[Scales$k != 0,]
+  Scales$Power = spectrum(Scales$k)
+  
+  MaxK = max(Scales$kx, Scales$ky, -Scales$kx, -Scales$ky)
+  
+  RN = ordered_rnorm_mat(MaxK*2+1,MaxK*2+1,3,seed=seed,length_one = length_one)
+  Scales$RNIndex = ifelse(Scales$kx<0, MaxK*2+1 +Scales$kx, Scales$kx) + ifelse(Scales$ky<0, MaxK*2+1 +Scales$ky, Scales$ky)*(MaxK*2+1) + 1
+  K = matrix(0,N,M)
+  K[Scales$i] = Scales$Power * RN[[1]][Scales$RNIndex]
+  f1 = fft(K,inverse=TRUE)
+  K[Scales$i] = Scales$Power * RN[[2]][Scales$RNIndex]
+  f2 = fft(K,inverse=TRUE)
+  
+  ret = list(f1 = Re(f1), f2 = Re(f2), points = pA, scales = Scales, mat=mat, A=A)
+  class(ret) = "seam_field"
+  ret
+}
+
+
+seam.geom = function(refine=1, ...) {
   n = 6 * refine
   m = 5 * refine
   
   N = 5*n
   M = m
-  
-  R = matrix(0,N,M)
-  X = row(R)-1
-  Y = col(R)-1
-  B = Y/m + X/m / 2
-  A = X/n
-  
-  ret = generator(refine,seed)
+
+  ret = seam.geom.fields(N, M, mat = matrix(c( 5, 0, 3, 1),2,2), ...)
+
   f1 = ret$f1
   f2 = ret$f2
   ret$f1 = NULL
   ret$f2 = NULL
+  A = ret$points[,1]
+  dim(A) = dim(f1)
+  B = ret$points[,2]
+  dim(B) = dim(f1)
   
   A = A[1:(2*n),1:m]
   B = B[1:(2*n),1:m]
