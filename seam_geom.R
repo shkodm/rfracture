@@ -1,4 +1,4 @@
-ordered_rnorm_mat = function(N, M, k=1, seed) {
+ordered_rnorm_mat = function(N, M, k=1, seed, length_one=FALSE) {
   if (! missing(seed)) set.seed(seed)
   RN = t(matrix(rnorm(N*M*k*2),k*2,N*M))
   R = matrix(0+0i,N,M)
@@ -6,7 +6,9 @@ ordered_rnorm_mat = function(N, M, k=1, seed) {
   fpZ = expand.grid(i=circ(1:N-1,N)/N,j=circ(1:M-1,M)/M)
   o = order(pmax(abs(fpZ$i),abs(fpZ$j)),atan2(fpZ$i,fpZ$j))
   lapply(1:k-1, function(i) {
-    R[o] = RN[,2*i+1] + 1i*RN[,2*i+2]
+    z = RN[,2*i+1] + 1i*RN[,2*i+2]
+    if (length_one) z = z/Mod(z)
+    R[o] = z
     R
   })
 }
