@@ -11,7 +11,7 @@ seam.balls = function(obj,
                       relax_iterations = 10,
                       max_add = 200,
                       overshot = 100,
-                      seed=0,mean.neighbor = 5,
+                      seed,mean.neighbor = 5,
                       iterations = ceiling(1.5*K/max_add),
                       delete=TRUE) {
   P = obj$points
@@ -30,7 +30,7 @@ seam.balls = function(obj,
   
   ndel = 100
   dlog = NULL
-  set.seed(seed)
+  if (!missing(seed)) set.seed(seed)
   for (iteration in seq_len(iterations)) {
     if (K+ndel > nrow(B)) {
       k = min(K + overshot - nrow(B), max_add)
@@ -69,7 +69,8 @@ seam.balls = function(obj,
       ds = fields.rdist.near(X[1:N,], X[1:n,], delta = 2*(Rmax+margin_opt),mean.neighbor = mean.neighbor,max.points = mean.neighbor*n)
       tds = data.frame(d = ds$ra, i = ds$ind[,1], j = ds$ind[,2])
       ds = fields.rdist.near(X[(N+1):nrow(X),], X[1:n,], delta = Rmax+margin_opt, mean.neighbor = mean.neighbor, max.points = mean.neighbor*n)
-      tds = rbind(tds, data.frame(d = ds$ra, i = ds$ind[,1]+N, j = ds$ind[,2]))
+      if (length(ds$ra) == 1) tds = rbind(tds, data.frame(d = ds$ra, i = ds$ind[1]+N, j = ds$ind[2]))
+        else if (length(ds$ra) != 0) tds = rbind(tds, data.frame(d = ds$ra, i = ds$ind[,1]+N, j = ds$ind[,2]))
       sel = tds$i > tds$j
       tds = tds[sel,,drop=FALSE]
       tds$iball = Xi[tds$i]

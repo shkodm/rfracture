@@ -173,7 +173,9 @@ seam.geom.fields = function(
     closed = 0.1,
     gap = NA,
     seed,
-    length_one = FALSE) {
+    length_one = FALSE,
+    bonds,
+    cut=TRUE) {
   p = as.matrix(expand.grid(x = 1:N-1, y = 1:M-1))
   pA = p %*% A
   circ = function(n) { x = 1:n-1; ifelse(x > n/2, x-n, x)/n }
@@ -193,13 +195,47 @@ seam.geom.fields = function(
   
   RN = ordered_rnorm_mat(MaxK*2+1,MaxK*2+1,3,seed=seed,length_one = length_one)
   Scales$RNIndex = ifelse(Scales$kx<0, MaxK*2+1 +Scales$kx, Scales$kx) + ifelse(Scales$ky<0, MaxK*2+1 +Scales$ky, Scales$ky)*(MaxK*2+1) + 1
-  K = matrix(0,N,M)
-  K[Scales$i] = Scales$Power * RN[[1]][Scales$RNIndex]
-  f1 = fft(K,inverse=TRUE)
-  K[Scales$i] = Scales$Power * RN[[2]][Scales$RNIndex]
-  f2 = fft(K,inverse=TRUE)
+  Scales$corr = corr.profile(1/Scales$k)
+  Scales$corr.angle = atan(Scales$corr)
+  Scales$PowerR1F1 = Scales$Power * cos(Scales$corr.angle)
+  Scales$PowerR2F1 = Scales$Power * sin(Scales$corr.angle)
+  Scales$PowerR1F2 = Scales$Power * sin(Scales$corr.angle)
+  Scales$PowerR2F2 = Scales$Power * cos(Scales$corr.angle)
   
-  ret = list(f1 = Re(f1), f2 = Re(f2), points = pA, scales = Scales, mat=mat, A=A)
+  K = matrix(0,N,M)
+  K[Scales$i] = Scales$PowerR1F1 * RN[[1]][Scales$RNIndex] + Scales$PowerR2F1 * RN[[2]][Scales$RNIndex]
+  f1 = Re(fft(K,inverse=TRUE))
+  K[Scales$i] = Scales$PowerR1F2 * RN[[1]][Scales$RNIndex] + Scales$PowerR2F2 * RN[[2]][Scales$RNIndex]
+  f2 = Re(fft(K,inverse=TRUE))
+  
+  Scales$PowerR1Diff = Scales$PowerR1F1 - Scales$PowerR1F2
+  Scales$PowerR2Diff = Scales$PowerR2F1 - Scales$PowerR2F2
+  diff_sd = sqrt(sum(Scales$PowerR1Diff^2 + Scales$PowerR2Diff^2))
+  f1_sd = sqrt(sum(Scales$PowerR1F1^2 + Scales$PowerR2F1^2))
+  f2_sd = sqrt(sum(Scales$PowerR1F2^2 + Scales$PowerR2F2^2))
+  f1_mean = 0
+  f2_mean = 0
+  if (is.na(gap)) gap = -qnorm(closed,mean=0,sd=diff_sd)
+  f1 = f1 + gap/2
+  f1_mean = f1_mean + gap/2
+  f2 = f2 - gap/2
+  f2_mean = f2_mean - gap/2
+  if (!missing(bonds)) { if (length(bonds) == 2) {
+    shift = mean(bonds)
+    f1 = f1 + shift
+    f1_mean = f1_mean + shift
+    f2 = f2 + shift
+    f2_mean = f2_mean + shift
+    Pcut = c(pnorm(bonds,mean=f1_mean,sd=f1_sd),pnorm(bonds,mean=f2_mean,sd=f2_sd))
+    Pcut = max(Pcut[1],1-Pcut[2],Pcut[3],1-Pcut[4])
+    cat("Probability of being out of bonds:", Pcut,"\n")
+    if (cut) {
+      if (Pcut > 1e-2) warning("Probability of being out of bonds is higher then 1%")
+      f1[] = ifelse(f1<bonds[1],bonds[1],ifelse(f1>bonds[2],bonds[2],f1))
+      f2[] = ifelse(f2<bonds[1],bonds[1],ifelse(f2>bonds[2],bonds[2],f2))
+    }
+  } else stop("bonds should be of length 2")}
+  ret = list(f1 = f1, f2 = f2, points = pA, scales = Scales, mat=mat, A=A, f1_mean=f1_mean, f1_sd=f1_sd, f2_mean=f2_mean, f2_sd=f2_sd)
   class(ret) = "seam_field"
   ret
 }
