@@ -13,6 +13,7 @@ seam.balls = function(obj,
                       overshot = 100,
                       seed,mean.neighbor = 5,
                       iterations = ceiling(1.5*K/max_add),
+                      dist = function(k,Rmin,Rmax) runif(k,Rmin,Rmax),
                       delete=TRUE) {
   P = obj$points
   i = obj$triangles
@@ -38,7 +39,7 @@ seam.balls = function(obj,
       
       nB = data.frame(
         tri = sample.int(nrow(T), k, prob = p, replace = TRUE),
-        r = runif(k,Rmin,Rmax)
+        r = dist(k,Rmin,Rmax)
       )
       nB$h1 = P$h[T$i1[nB$tri]] - 2 * (nB$r+margin)
       nB$h2 = P$h[T$i2[nB$tri]] - 2 * (nB$r+margin)
