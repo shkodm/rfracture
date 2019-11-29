@@ -7,7 +7,7 @@ shape=4
 s=1
 refine=16
 for (s in 1:1) {
-for (refine_s in c(16,32,64)) {
+for (refine_s in c(32)) {
   refine = refine_s * s
   spec = exp.spectrum(scale = 0.015*s^(2.2-2), alpha = 2.2)
   spec_die = ogilve.corr.profile(ML=1.15/s, TL=0.3/s, MaxMF=0, MinMF=1)
@@ -184,7 +184,8 @@ s = 1
   
   
         
-source("seam_balls.R")
+  source("hip.R")
+  source("seam_balls.R")
 Rmin = 0.005
 Rmax = 0.01
 
@@ -192,7 +193,7 @@ dist = function(k,Rmin,Rmax) { rhip(k,Rmin^3,Rmax^3)^(1/3) }
 plot(dist(1000,Rmin,Rmax))
 
 margin=0.001
-B = seam.balls(obj,4000,Rmax = Rmax,Rmin=Rmin,dist=dist, mean.neighbor = 500,iterations = 40,margin = margin,max_add = 300)
+B = seam.balls(obj_a,4000,Rmax = Rmax,Rmin=Rmin,dist=dist, mean.neighbor = 500,iterations = 40,margin = margin,max_add = 300)
 #B2 = seam.balls(obj,3000,Rmax = Rmax,Rmin=Rmin,B=B,mean.neighbor = 500,iterations = 40,margin = margin,max_add = 30,seed=7)
 #B = B2
 sel = B$x > B$f1 | B$x < B$f2
