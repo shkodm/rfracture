@@ -14,3 +14,5 @@ qhip = function(q,a,b){
 rhip = function(n,a,b){
   qhip(runif(n),a,b)
 }
+
+

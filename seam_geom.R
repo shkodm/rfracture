@@ -241,7 +241,7 @@ seam.geom.fields = function(
 }
 
 
-seam.geom = function(refine=1, ...) {
+seam.geom = function(refine=1, touch="exclude", widen=0, widen_grad=1, ...) {
   n = 6 * refine
   m = 5 * refine
   
@@ -304,10 +304,22 @@ seam.geom = function(refine=1, ...) {
   P$fm = (P$f1 + P$f2)/2
   P$f1[sel] = P$fm[sel]
   P$f2[sel] = P$fm[sel]
+  h2 = P$f1 - P$fm
+  widen_fac = (pnorm(h2,sd=1/(sqrt(2*pi)*widen_grad/(2*widen)))*2-1)*widen
+  P$f1 = P$f1 + widen_fac
+  P$f2 = P$f2 - widen_fac
   
   sel = sel[i]
   dim(sel) = dim(i)
-  i = i[rowSums(sel) != 3,]
+  sel = rowSums(sel) != 3
+  if (touch == "exclude") {
+    
+  } else if (touch == "include") {
+    sel[] = TRUE
+  } else if (touch == "only") {
+    sel = ! sel
+  } else stop("invalid value for touch")
+  i = i[sel,]
   sel = rep(FALSE,nrow(P))
   sel[i[,1]] = TRUE
   sel[i[,2]] = TRUE
@@ -318,6 +330,7 @@ seam.geom = function(refine=1, ...) {
   i[] = ni[i]
   i = i[rowSums(i == 0) == 0,]
   P = P[sel,]
+  
   P$x = P$x - 0.5
   P$y = P$y - 0.5
   P$h = P$f1 - P$f2
@@ -331,14 +344,50 @@ seam.geom = function(refine=1, ...) {
 }
 
 
-seam3d = function(obj,type=c("top","bottom"),top="top" %in% type,bottom="bottom" %in% type,middle="middle" %in% type) {
+seam.touching = function(obj,touch="exclude") {
+  P = obj$points
+  i = obj$triangles
+  sel = P$f1 == P$f2
+
+  sel = sel[i]
+  dim(sel) = dim(i)
+  sel = rowSums(sel) != 3
+  if (touch == "exclude") {
+    
+  } else if (touch == "include") {
+    sel[] = TRUE
+  } else if (touch == "only") {
+    sel = ! sel
+  } else stop("invalid value for touch")
+  i = i[sel,]
+  sel = rep(FALSE,nrow(P))
+  sel[i[,1]] = TRUE
+  sel[i[,2]] = TRUE
+  sel[i[,3]] = TRUE
+  
+  ni = rep(0,nrow(P))
+  ni[sel] = 1:sum(sel)
+  i[] = ni[i]
+  i = i[rowSums(i == 0) == 0,]
+  P = P[sel,]
+  obj$points=P
+  obj$triangles=i
+  return(obj)
+  
+}
+
+
+seam3d = function(obj,type=c("top","bottom"),top="top" %in% type,bottom="bottom" %in% type,middle="middle" %in% type,col=c(2,3,4), add=FALSE) {
+  if (length(col) == 1) col = rep(col,3)
   iv = as.vector(t(obj$triangles))
-  clear3d()
-  plot3d(diag(3))
-  clear3d()
-  if (top) triangles3d(obj$points$f1[iv],obj$points$x[iv],obj$points$y[iv],col=2)
-  if (bottom) triangles3d(obj$points$f2[iv],obj$points$x[iv],obj$points$y[iv],col=3)
-  if (middle) triangles3d(obj$points$fm[iv],obj$points$x[iv],obj$points$y[iv],col=4)
+  if (!add) {
+    clear3d()
+    plot3d(diag(3))
+    clear3d()
+  }
+  if (top) triangles3d(obj$points$f1[iv],obj$points$x[iv],obj$points$y[iv],col=col[1])
+  if (bottom) triangles3d(obj$points$f2[iv],obj$points$x[iv],obj$points$y[iv],col=col[2])
+  if (middle) triangles3d(obj$points$fm[iv],obj$points$x[iv],obj$points$y[iv],col=col[3])
 }
 
 save.msh = function(obj, filename,type=c("top","bottom"),top="top" %in% type,bottom="bottom" %in% type,middle="middle" %in% type) {
@@ -401,4 +450,45 @@ seam.volume = function(obj) {
   a = abs(1/2*(v1[,1]*v2[,2] - v1[,2]*v2[,1]))
   h = 1/3*(obj$points$h[obj$triangles[,1]] + obj$points$h[obj$triangles[,2]] + obj$points$h[obj$triangles[,3]])
   sum(a*h)
+}
+
+
+border3d = function(obj, f1, f2, add=FALSE, ...) {
+  edges = rbind(obj$triangles[,1:2],obj$triangles[,2:3],obj$triangles[,c(1,3)])
+  sel = edges[,1] > edges[,2]
+  edges[sel,] = edges[sel,c(2,1)]
+  head(edges)
+  edges = edges[order(edges[,1],edges[,2]),]
+  a = !duplicated(edges)
+  head(edges[a,])
+  sel = which(table(cumsum(a)) == 1)
+  edges = edges[a,][sel,]
+  
+  plot(obj$points$x[edges[,1]],obj$points$y[edges[,2]],asp=1)
+  
+  if (missing(f1)) f1 = obj$points$f1
+  if (missing(f2)) f2 = obj$points$f2
+  if (length(f1) == 1) f1 = rep(f1, nrow(obj$points))
+  if (length(f2) == 1) f2 = rep(f2, nrow(obj$points))
+  open1 = f1[edges[,1]] != f2[edges[,1]]
+  open2 = f1[edges[,2]] != f2[edges[,2]]
+  
+  t1 = rbind(
+    f1[edges[open1,1]],obj$points$x[edges[open1,1]],obj$points$y[edges[open1,1]],
+    f2[edges[open1,1]],obj$points$x[edges[open1,1]],obj$points$y[edges[open1,1]],
+    f2[edges[open1,2]],obj$points$x[edges[open1,2]],obj$points$y[edges[open1,2]])
+  dim(t1) = c(3,sum(open1)*3)
+  t1 = t(t1)
+  t2 = rbind(
+    f2[edges[open2,2]],obj$points$x[edges[open2,2]],obj$points$y[edges[open2,2]],
+    f1[edges[open2,2]],obj$points$x[edges[open2,2]],obj$points$y[edges[open2,2]],
+    f1[edges[open2,1]],obj$points$x[edges[open2,1]],obj$points$y[edges[open2,1]])
+  dim(t2) = c(3,sum(open2)*3)
+  t2 = t(t2)
+  if (!add) {
+    clear3d()
+    plot3d(diag(3))
+    clear3d()
+  }
+  triangles3d(rbind(t1,t2),...)
 }
