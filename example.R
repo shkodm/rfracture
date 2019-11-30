@@ -2,7 +2,8 @@ library(rgl)
 
 source("seam_geom.R")
 
-basename = "~/seam/seam3"
+basename = "seam/seam4"
+dir.create("seam")
 shape=4
 s=1
 refine=16
@@ -186,16 +187,25 @@ s = 1
         
   source("hip.R")
   source("seam_balls.R")
-Rmin = 0.005
-Rmax = 0.01
+Rmin = 0.004
+Rmax = 0.02
 
 dist = function(k,Rmin,Rmax) { rhip(k,Rmin^3,Rmax^3)^(1/3) }
 plot(dist(1000,Rmin,Rmax))
 
-margin=0.001
-B = seam.balls(obj_a,4000,Rmax = Rmax,Rmin=Rmin,dist=dist, mean.neighbor = 500,iterations = 40,margin = margin,max_add = 300)
-#B2 = seam.balls(obj,3000,Rmax = Rmax,Rmin=Rmin,B=B,mean.neighbor = 500,iterations = 40,margin = margin,max_add = 30,seed=7)
-#B = B2
+margin=0.0005
+Rmin = 0.005
+Rmax = 0.012
+B_L = seam.balls(obj_a,6000,Rmax = Rmax,Rmin=Rmin,dist=dist, mean.neighbor = 500,iterations = 40,margin = margin,max_add = 100)
+B = B_L
+
+Rmin = 0.005
+Rmax = 0.005
+B = seam.balls(obj_a,B=B_L,1000,Rmax = Rmax,Rmin=Rmin,dist=dist, mean.neighbor = 500,iterations = 40,margin = margin,max_add = 500)
+
+
+sum(4/2*pi*B$r^3)/ seam.volume(obj)
+
 sel = B$x > B$f1 | B$x < B$f2
 sum(sel)
 B = B[!sel,]
@@ -203,6 +213,10 @@ B = B[!sel,]
 seam3d(seam.cut(obj))
 spheres3d(B$x, B$y, B$z, col = "green", radius = B$r)
 #triangles3d(P$f2[iv], P$x[iv], P$y[iv], col = 1,alpha=0.7)
+
+clear3d()
+spheres3d(B$x, B$y, B$z, col = "green", radius = B$r)
+
 
 write.csv(B[,c("x","y","z","r")],file=paste0(fname,"_balls.csv"),row.names=FALSE)
 write.lammps.data(B,filename=paste0(fname,"_balls.dat"),density = 2,xlim = c(0,0.2),ylim=c(0,1),zlim=c(0,1))
