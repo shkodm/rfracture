@@ -1,6 +1,28 @@
 library(fields)
 source("rtri.R")
 
+
+seam.balls.rand = function(k, T, Rmin, Rmax, dist = function(k,Rmin,Rmax) runif(k,Rmin,Rmax)){
+  p = pmax(0, T$h - 2 * (Rmin+margin))
+  
+  nB = data.frame(
+    tri = sample.int(nrow(T), k, prob = p, replace = TRUE),
+    r = dist(k,Rmin,Rmax)
+  )
+  nB$h1 = P$h[T$i1[nB$tri]] - 2 * (nB$r+margin)
+  nB$h2 = P$h[T$i2[nB$tri]] - 2 * (nB$r+margin)
+  nB$h3 = P$h[T$i3[nB$tri]] - 2 * (nB$r+margin)
+  sel = nB$h1+nB$h2+nB$h3 > 0
+  nB = nB[sel,,drop=FALSE]
+  ret = rtri(nrow(nB),nB$h1,nB$h2,nB$h3)
+  nB$y = P$x[T$i1[nB$tri]]*ret$w1 + P$x[T$i2[nB$tri]]*ret$w2 + P$x[T$i3[nB$tri]]*ret$w3
+  nB$z = P$y[T$i1[nB$tri]]*ret$w1 + P$y[T$i2[nB$tri]]*ret$w2 + P$y[T$i3[nB$tri]]*ret$w3
+  nB$f1 = P$f1[T$i1[nB$tri]]*ret$w1 + P$f1[T$i2[nB$tri]]*ret$w2 + P$f1[T$i3[nB$tri]]*ret$w3
+  nB$f2 = P$f2[T$i1[nB$tri]]*ret$w1 + P$f2[T$i2[nB$tri]]*ret$w2 + P$f2[T$i3[nB$tri]]*ret$w3
+  nB$x = nB$f2 + nB$r + margin + ret$h
+  if (! (all(nB$x > nB$f2 + nB$r + margin) && all(nB$x < nB$f1 - nB$r - margin))) stop("balls do not fit in triangles")
+}
+
 seam.balls = function(obj,
                       K = 4000,
                       Rmax = 0.01,
@@ -14,7 +36,8 @@ seam.balls = function(obj,
                       seed,mean.neighbor = 5,
                       iterations = ceiling(1.5*K/max_add),
                       dist = function(k,Rmin,Rmax) runif(k,Rmin,Rmax),
-                      delete=TRUE) {
+                      delete=TRUE,
+                      period=1) {
   P = obj$points
   i = obj$triangles
   T = data.frame(i1=i[,1],i2=i[,2],i3=i[,3])
@@ -24,8 +47,8 @@ seam.balls = function(obj,
   
   sel =        P$x[T$i1] > 0 & P$x[T$i2] > 0 & P$x[T$i3] > 0
   sel = sel & (P$y[T$i1] > 0 & P$y[T$i2] > 0 & P$y[T$i3] > 0)
-  sel = sel & (P$x[T$i1] < 1 & P$x[T$i2] < 1 & P$x[T$i3] < 1)
-  sel = sel & (P$y[T$i1] < 1 & P$y[T$i2] < 1 & P$y[T$i3] < 1)
+  sel = sel & (P$x[T$i1] < period & P$x[T$i2] < period & P$x[T$i3] < period)
+  sel = sel & (P$y[T$i1] < period & P$y[T$i2] < period & P$y[T$i3] < period)
   T = T[sel,]
 
   
@@ -61,11 +84,11 @@ seam.balls = function(obj,
     Xi = c(1:n,1:n,1:n,1:n,rep(0,2*nrow(P)))
     N = n*4
     start_ds = Inf
-    for (i in seq_len(relax_iterations + 1)) {
+    for (i in seq_len(relax_iterations + ifelse(delete,1,0))) {
       X = cbind(
         c(B$x, B$x,   B$x, B$x,   P$f1, P$f2),
-        c(B$y, B$y+1, B$y, B$y+1, P$x , P$x ),
-        c(B$z, B$z, B$z+1, B$z+1, P$y , P$y ))
+        c(B$y, B$y+period, B$y, B$y+period, P$x , P$x ),
+        c(B$z, B$z, B$z+period, B$z+period, P$y , P$y ))
       #print(dim(X))
       ds = fields.rdist.near(X[1:N,], X[1:n,], delta = 2*(Rmax+margin_opt),mean.neighbor = mean.neighbor,max.points = mean.neighbor*n)
       tds = data.frame(d = ds$ra, i = ds$ind[,1], j = ds$ind[,2])
@@ -75,7 +98,8 @@ seam.balls = function(obj,
       sel = tds$i > tds$j
       tds = tds[sel,,drop=FALSE]
       tds$iball = Xi[tds$i]
-      tds$v = tds$d - ifelse(tds$iball > 0, B$r[tds$iball], 0) - B$r[tds$j]
+      tds$v = tds$d  - B$r[tds$j]
+      tds$v[tds$iball > 0] = tds$v[tds$iball > 0] - B$r[tds$iball[tds$iball > 0]]
       #print(range(tds$v))
       if (i == 1) start_ds = { if (nrow(tds) > 0) min(tds$v) else Inf }
       if (all(tds$v > 0) || i == relax_iterations + 1) {
@@ -102,8 +126,8 @@ seam.balls = function(obj,
       #print(range(p))
       #print(range(pi))
       B$x = X[1:n,1]
-      B$y = X[1:n,2] %% 1
-      B$z = X[1:n,3] %% 1
+      B$y = X[1:n,2] %% period
+      B$z = X[1:n,3] %% period
     }
     #return (list(B,tds,X))
     if (delete) {
@@ -156,4 +180,14 @@ write.lammps.data = function(B, filename, density=2, comment="R generated balls"
   cat("\n",file=f)
   write.table(atoms,file=f,row.names=FALSE,col.names=FALSE)
   close(f)
-} 
+}
+
+f = file("~/seam/pack1/out1.dat","r")
+l = readLines(f,11)
+l = strsplit(l," ")
+n = as.integer(l[[3]][1])
+tab = read.table(f,header=FALSE,nrow=n)
+close(f)
+dens = tab[,4]
+B = data.frame(r=tab[,3]/2, x=tab[,5], y=tab[,6], z=tab[,7])
+

@@ -2,15 +2,15 @@ library(rgl)
 
 source("seam_geom.R")
 
-basename = "~/seam/seam3"
+basename = "~/seam/seam4"
 shape=4
 s=1
-refine=16
+refine_s=32
 for (s in 1:1) {
 for (refine_s in c(32)) {
   refine = refine_s * s
   spec = exp.spectrum(scale = 0.015*s^(2.2-2), alpha = 2.2)
-  spec_die = ogilve.corr.profile(ML=1.15/s, TL=0.3/s, MaxMF=0, MinMF=1)
+  spec_die = ogilve.corr.profile(ML=0.95/s, TL=0.1/s, MaxMF=0, MinMF=1)
   corr = ogilve.corr.profile(ML=0.7/s, TL=0.3/s, MaxMF=1, MinMF=0.1)
   obj = seam.geom(
     refine = refine,
@@ -19,13 +19,13 @@ for (refine_s in c(32)) {
     spectrum = function(k) spec(k)*spec_die(1/k),
     corr.profile = corr,
     closed = 0.1,
-    bonds=c(0,0.2)/s,
+    bonds=c(0,0.2)/s, cut= TRUE,
     widen = 0.01/s,
     widen_grad = 3
   )
   obj = seam.cut(obj)
   obj$points = obj$points*s
-
+  print(range(obj$points$f1,obj$points$f2))
   obj_a = seam.touching(obj)
   obj_b = seam.touching(obj,touch = "only")
   fname = sprintf("%s_S%02d_R%02d",basename, s, refine_s)
@@ -51,161 +51,65 @@ for (refine_s in c(32)) {
   writeSTL(paste0(fname,"_border_t.stl"))
 }
 }
-source("seam_geom.R")
 
-refine = 32
-  #  obj = seam.geom(refine,seed=234,generator=seam.geom.my())
-  obj_t = seam.geom(
-    refine = refine,
-    touch = "only",
-    seed=124,
-    spectrum=exp.spectrum(scale = 0.015, alpha = 2.2),
-    corr.profile = ogilve.corr.profile(ML=0.7, TL=0.3, MaxMF=0.9, MinMF=0.1),
-    closed = 0.1,
-    bonds=c(0,0.2)
-  )
-  obj = seam.geom(
-    refine = refine,
-    touch = "exclude",
-    seed=124,
-    spectrum=exp.spectrum(scale = 0.015, alpha = 2.2),
-    corr.profile = ogilve.corr.profile(ML=0.7, TL=0.3, MaxMF=0.9, MinMF=0.1),
-    closed = 0.1,
-    bonds=c(0,0.2)
-  )
-  fname = sprintf("%s_R%02d",basename, refine)
-  obj_cut = seam.cut(obj)
-  seam3d(obj_cut,type = "top")
-  writeSTL(paste0(fname,"_cut_t.stl"))
-  seam3d(obj_cut,type = "bottom")
-  writeSTL(paste0(fname,"_cut_b.stl"))
-
-  seam3d(obj_cut,type = "bottom")
-  seam3d(seam.cut(obj_t),type = "bottom",col=2,add=TRUE)
-  #writeSTL(paste0(fname,"_cut_b.stl"))
-  writeOBJ(paste0(fname,"_cut_b.obj"))
-
-  
-  
-  source("seam_geom.R")
-  refine = 32*4
-  obj = seam.geom(
-    refine = refine,
-    touch = "exclude",
-    seed=124,
-    spectrum=exp.spectrum(scale = 0.015, alpha = 2.2),
-    corr.profile = ogilve.corr.profile(ML=0.7, TL=0.3, MaxMF=0.9, MinMF=0.1),
-    closed = 0.1,
-    bonds=c(0,0.2),
-    widen = 0.005, widen_grad = 2
-  )
-  seam3d(seam.cut(obj),type = "bottom")  
-  obj_t = seam.geom(
-    refine = refine,
-    touch = "only",
-    seed=124,
-    spectrum=exp.spectrum(scale = 0.015, alpha = 2.2),
-    corr.profile = ogilve.corr.profile(ML=0.7, TL=0.3, MaxMF=0.9, MinMF=0.1),
-    closed = 0.1,
-    bonds=c(0,0.2),
-    widen = 0.005, widen_grad = 3
-  )
-  seam3d(seam.cut(obj_t),type = "bottom",add = TRUE,col=2)
-  fname = sprintf("%s_R%02d",basename, refine)
-  writeOBJ(paste0(fname,"_cut_b.obj"))
-  
-  
-  seam3d(seam.cut(obj))  
-  
-  
-  
-  refine = 32
-  obj = seam.geom(
-    refine = refine,
-    touch = "exclude",
-    seed=124,
-    spectrum = exp.spectrum(scale = 0.015, alpha = 2.2),
-    corr.profile = ogilve.corr.profile(ML=0.7, TL=0.3, MaxMF=0.9, MinMF=0.1),
-    closed = 0.1,
-    bonds=c(0,0.2),
-    widen = 0.005, widen_grad = 2
-  )
-  seam3d(seam.cut(obj))  
-  
-
-for (s in 1:4) {
-  refine = 16*s
-  spec = exp.spectrum(scale = 0.015*s^(2.2-2), alpha = 2.2)
-  spec_die = ogilve.corr.profile(ML=1.15/s, TL=0.3/s, MaxMF=0, MinMF=1)
-  corr = ogilve.corr.profile(ML=0.7/s, TL=0.3/s, MaxMF=1, MinMF=0.1)
-  obj = seam.geom(
-    refine = refine,
-    touch = "exclude",
-    seed=121,
-    spectrum = function(k) { spec(k) * spec_die(1/k) },
-    corr.profile = corr,
-    closed = 0.1#, bonds=c(0.0,0.2)/s
-  )
-  obj = seam.cut(obj)
-  obj$points = obj$points*s
-  
-  seam3d(obj)  
-  writeSTL(sprintf("test%02d.stl",s))
-  print(range(obj$points$f1,obj$points$f2))
-  print(mean(obj$points$h))
-}
-  
-  
-refine_s = 32
-s = 1
-  refine = refine_s * s
-  spec = exp.spectrum(scale = 0.015*s^(2.2-2), alpha = 2.2)
-  spec_die = ogilve.corr.profile(ML=1.15/s, TL=0.3/s, MaxMF=0, MinMF=1)
-  corr = ogilve.corr.profile(ML=0.7/s, TL=0.3/s, MaxMF=1, MinMF=0.1)
-  obj = seam.geom(
-    refine = refine,
-    touch = "include",
-    seed=121,
-    spectrum = function(k) spec(k)*spec_die(1/k),
-    corr.profile = corr,
-    closed = 0.1,
-    bonds=c(0,0.2)/s,
-    widen = 0.01/s,
-    widen_grad = 3
-  )
-  obj = seam.cut(obj)
-  obj$points = obj$points*s
-  
-  fname = sprintf("%s_S%02d_R%02d",basename, s, refine_s)
-  seam3d(obj)
-  
-  border3d(obj,f1 = 1, col=4)
-
-  
-  
         
   source("hip.R")
   source("seam_balls.R")
-Rmin = 0.005
-Rmax = 0.01
+
+N = 62500
+(seam.volume(seam.cut(obj))*0.2 / (4/3*pi*N))^(1/3)
+
+Rmin = 0.0030
+Rmax = 0.0032
+
+seam.volume(seam.cut(obj_a))*0.2 / (4/3*pi*Rmax^3)
+
 
 dist = function(k,Rmin,Rmax) { rhip(k,Rmin^3,Rmax^3)^(1/3) }
 plot(dist(1000,Rmin,Rmax))
 
-margin=0.001
-B = seam.balls(obj_a,4000,Rmax = Rmax,Rmin=Rmin,dist=dist, mean.neighbor = 500,iterations = 40,margin = margin,max_add = 300)
+margin=0.0017
+B = seam.balls(obj_a,N,Rmax = Rmax,Rmin=Rmin,dist=dist, mean.neighbor = 500,iterations = 40,margin = margin,max_add = 8000,period=s)
 #B2 = seam.balls(obj,3000,Rmax = Rmax,Rmin=Rmin,B=B,mean.neighbor = 500,iterations = 40,margin = margin,max_add = 30,seed=7)
 #B = B2
+BS = B
 sel = B$x > B$f1 | B$x < B$f2
 sum(sel)
 B = B[!sel,]
 
-seam3d(seam.cut(obj))
+seam3d(obj_a)
 spheres3d(B$x, B$y, B$z, col = "green", radius = B$r)
 #triangles3d(P$f2[iv], P$x[iv], P$y[iv], col = 1,alpha=0.7)
 
-write.csv(B[,c("x","y","z","r")],file=paste0(fname,"_balls.csv"),row.names=FALSE)
-write.lammps.data(B,filename=paste0(fname,"_balls.dat"),density = 2,xlim = c(0,0.2),ylim=c(0,1),zlim=c(0,1))
+seam.volume(seam.cut(obj))*0.2 / (4/3*pi*Rmax^3)
+seam.volume(obj)*0.2 / (4/3*pi*Rmax^3)
+
+
+write.csv(B[,c("x","y","z","r")],file=paste0(fname,"_balls_L.csv"),row.names=FALSE)
+write.lammps.data(B,filename=paste0(fname,"_balls_L.dat"),density = 2,xlim = c(0,0.2),ylim=c(0,1),zlim=c(0,1))
+
+
+B = seam.balls(obj_a,N, B=BS, Rmax = Rmax,Rmin=Rmin,dist=dist, mean.neighbor = 500,iterations = 40,margin = margin,max_add = 8000,period=s)
+
+write.csv(B[,c("x","y","z","r")],file=paste0(fname,"_balls_L2.csv"),row.names=FALSE)
+write.lammps.data(B,filename=paste0(fname,"_balls_L2.dat"),density = 2,xlim = c(0,0.2),ylim=c(0,1),zlim=c(0,1))
+
+
+
+################
+
+margin=0.0017
+N=64000
+B = seam.balls(obj_a,N,Rmax = Rmax,Rmin=Rmin,dist=dist, mean.neighbor = 500,iterations = 40, relax_iterations = 0, delete=FALSE, margin = margin,max_add = N,period=s)
+
+write.csv(B[,c("x","y","z","r")],file=paste0(fname,"_balls_O.csv"),row.names=FALSE)
+write.lammps.data(B,filename=paste0(fname,"_balls_O.dat"),density = 2,xlim = c(0,0.2),ylim=c(0,1),zlim=c(0,1))
+
+
+
+4/3*pi*sum(B$r^3)/seam.volume(seam.cut(obj))
+diff(obj$points$y[obj$points$x == 1])
+
 
 x = seq(0,1,len=nrow(B))
 plot(x, sort(B$r,decreasing = TRUE)^3)
