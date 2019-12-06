@@ -175,7 +175,8 @@ seam.geom.fields = function(
     seed,
     length_one = FALSE,
     bonds,
-    cut=TRUE) {
+    cut=TRUE,
+    widen=0, widen_grad=1) {
   p = as.matrix(expand.grid(x = 1:N-1, y = 1:M-1))
   pA = p %*% A
   circ = function(n) { x = 1:n-1; ifelse(x > n/2, x-n, x)/n }
@@ -220,6 +221,15 @@ seam.geom.fields = function(
   f1_mean = f1_mean + gap/2
   f2 = f2 - gap/2
   f2_mean = f2_mean - gap/2
+  
+  sel = f1 < f2
+  fm = (f1 + f2)/2
+  f1[sel] = fm[sel]
+  f2[sel] = fm[sel]
+  h2 = f1 - fm
+  widen_fac = (pnorm(h2,sd=1/(sqrt(2*pi)*widen_grad/(2*widen)))*2-1)*widen
+  f1 = f1 + widen_fac
+  f2 = f2 - widen_fac
   if (!missing(bonds)) { if (length(bonds) == 2) {
     shift = mean(bonds)
     f1 = f1 + shift
@@ -241,7 +251,7 @@ seam.geom.fields = function(
 }
 
 
-seam.geom = function(refine=1, touch="exclude", widen=0, widen_grad=1, ...) {
+seam.geom = function(refine=1, ...) {
   n = 6 * refine
   m = 5 * refine
   
@@ -300,37 +310,7 @@ seam.geom = function(refine=1, touch="exclude", widen=0, widen_grad=1, ...) {
   #triangles3d(P1[iv,],col=2)
   #triangles3d(P2[iv,],col=3)
   
-  sel = P$f1 < P$f2
-  P$fm = (P$f1 + P$f2)/2
-  P$f1[sel] = P$fm[sel]
-  P$f2[sel] = P$fm[sel]
-  h2 = P$f1 - P$fm
-  widen_fac = (pnorm(h2,sd=1/(sqrt(2*pi)*widen_grad/(2*widen)))*2-1)*widen
-  P$f1 = P$f1 + widen_fac
-  P$f2 = P$f2 - widen_fac
-  
-  sel = sel[i]
-  dim(sel) = dim(i)
-  sel = rowSums(sel) != 3
-  if (touch == "exclude") {
-    
-  } else if (touch == "include") {
-    sel[] = TRUE
-  } else if (touch == "only") {
-    sel = ! sel
-  } else stop("invalid value for touch")
-  i = i[sel,]
-  sel = rep(FALSE,nrow(P))
-  sel[i[,1]] = TRUE
-  sel[i[,2]] = TRUE
-  sel[i[,3]] = TRUE
-  
-  ni = rep(0,nrow(P))
-  ni[sel] = 1:sum(sel)
-  i[] = ni[i]
-  i = i[rowSums(i == 0) == 0,]
-  P = P[sel,]
-  
+
   P$x = P$x - 0.5
   P$y = P$y - 0.5
   P$h = P$f1 - P$f2

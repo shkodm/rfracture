@@ -182,7 +182,8 @@ write.lammps.data = function(B, filename, density=2, comment="R generated balls"
   close(f)
 }
 
-f = file("~/seam/pack1/out1.dat","r")
+read.lammps.data = function(filename) {
+f = file(filename,"r")
 l = readLines(f,11)
 l = strsplit(l," ")
 n = as.integer(l[[3]][1])
@@ -190,4 +191,7 @@ tab = read.table(f,header=FALSE,nrow=n)
 close(f)
 dens = tab[,4]
 B = data.frame(r=tab[,3]/2, x=tab[,5], y=tab[,6], z=tab[,7])
+lim = sapply(l[6:8],function(x) as.numeric(x[1:2]))
+list(B=B, dens, xlim=lim[,1], ylim=lim[,2], zlim=lim[,3])
+}
 
