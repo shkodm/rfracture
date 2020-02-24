@@ -367,7 +367,7 @@ seam3d = function(obj,type=c("top","bottom"),top="top" %in% type,bottom="bottom"
   }
   if (top) triangles3d(obj$points$f1[iv],obj$points$x[iv],obj$points$y[iv],col=col[1])
   if (bottom) triangles3d(obj$points$f2[iv],obj$points$x[iv],obj$points$y[iv],col=col[2])
-  if (middle) triangles3d(obj$points$fm[iv],obj$points$x[iv],obj$points$y[iv],col=col[3])
+  if (middle) triangles3d((obj$points$f1+obj$points$f2)[iv]/2,obj$points$x[iv],obj$points$y[iv],col=col[3])
 }
 
 save.msh = function(obj, filename,type=c("top","bottom"),top="top" %in% type,bottom="bottom" %in% type,middle="middle" %in% type) {

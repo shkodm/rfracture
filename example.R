@@ -51,7 +51,32 @@ for (refine_s in c(16,64,32)) {
 }
 }
 
-        
+
+basename = "~/seam/seamf"
+refine_s = 1
+s=1
+k = s*refine_s
+fname = sprintf("%s_S%02d_R%02d",basename, s, refine_s)
+I = matrix(1:((k+1)*(k+1)),k+1,k+1)
+points = expand.grid(x = (0:k)/refine_s,y = (0:k)/refine_s)
+points$f2 = 0
+points$f1 = 0.2*31/32
+points$h = points$f1 - points$f2
+triangles = rbind(
+  cbind(as.vector(I[1:k,1:k]),as.vector(I[1:k,1:k+1]),as.vector(I[1:k+1,1:k])),
+  cbind(as.vector(I[1:k+1,1:k+1]),as.vector(I[1:k,1:k+1]),as.vector(I[1:k+1,1:k]))
+)
+obj_a = list(points=points, triangles=triangles)
+seam3d(obj_a)
+writeSTL(paste0(fname,".stl"))
+seam3d(obj_a,type="top")
+writeSTL(paste0(fname,"_top.stl"))
+seam3d(obj_a,type="bottom")
+writeSTL(paste0(fname,"_bottom.stl"))
+seam3d(obj_a,type="middle")
+writeSTL(paste0(fname,"_middle.stl"))
+
+
   source("hip.R")
   source("seam_balls.R")
 
@@ -104,6 +129,18 @@ B = seam.balls(obj_a,N,Rmax = Rmax,Rmin=Rmin,dist=dist, mean.neighbor = 500,iter
 write.csv(B[,c("x","y","z","r")],file=paste0(fname,"_balls_O.csv"),row.names=FALSE)
 write.lammps.data(B,filename=paste0(fname,"_balls_O.dat"),density = 2,xlim = c(0,0.2),ylim=c(0,1),zlim=c(0,1))
 
+#################
+
+N = 1500
+margin=0.0017
+Rmin = 0.018
+Rmax = 0.023
+dist = function(k,Rmin,Rmax) { rhip(k,Rmin^3,Rmax^3)^(1/3) }
+
+B = seam.balls(obj_a, N, Rmax=Rmax, Rmin=Rmin, dist=dist, mean.neighbor=500, iterations=40, relax_iterations=0, delete=FALSE, margin=margin, max_add=N, period=s)
+
+write.csv(B[,c("x","y","z","r")],file=paste0(fname,"_balls_O.csv"),row.names=FALSE)
+write.lammps.data(B,filename=paste0(fname,"_balls_O.dat"),density = 2,xlim = c(0,0.2),ylim=c(0,1),zlim=c(0,1))
 
 
 ###############

@@ -45,11 +45,11 @@ seam.balls = function(obj,
   dim(h) = dim(i)
   T$h = rowMeans(h)
   
-  sel =        P$x[T$i1] > 0 & P$x[T$i2] > 0 & P$x[T$i3] > 0
-  sel = sel & (P$y[T$i1] > 0 & P$y[T$i2] > 0 & P$y[T$i3] > 0)
-  sel = sel & (P$x[T$i1] < period & P$x[T$i2] < period & P$x[T$i3] < period)
-  sel = sel & (P$y[T$i1] < period & P$y[T$i2] < period & P$y[T$i3] < period)
-  T = T[sel,]
+  sel =        P$x[T$i1] >= 0 & P$x[T$i2] >= 0 & P$x[T$i3] >= 0
+  sel = sel & (P$y[T$i1] >= 0 & P$y[T$i2] >= 0 & P$y[T$i3] >= 0)
+  sel = sel & (P$x[T$i1] <= period & P$x[T$i2] <= period & P$x[T$i3] <= period)
+  sel = sel & (P$y[T$i1] <= period & P$y[T$i2] <= period & P$y[T$i3] <= period)
+  T = T[sel,,drop=FALSE]
 
   
   ndel = 100
