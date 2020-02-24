@@ -1,3 +1,14 @@
+
+#' Generate a matrix of random complex numbers in a consistent order
+#' 
+#' @param N number of rows
+#' @param M number of columns
+#' @param k number of independent matrices
+#' @param seed random seed
+#' @param length_one if TRUE, return complex numbers of length 1
+#' @example 
+#' ordered_rnorm_mat(5,5,1,seed=123)
+#' @export
 ordered_rnorm_mat = function(N, M, k=1, seed, length_one=FALSE) {
   if (! missing(seed)) set.seed(seed)
   RN = t(matrix(rnorm(N*M*k*2),k*2,N*M))
@@ -18,7 +29,7 @@ ordered_rnorm_mat = function(N, M, k=1, seed, length_one=FALSE) {
   })
 }
 
-seam.geom.my = function(totalScale = 0.2,
+fracture.geom.my = function(totalScale = 0.2,
                        surfaceScale = 0.13,
                        centerlineScale = 0.0,
                        centerlineRadius = totalScale/2,
@@ -90,13 +101,24 @@ seam.geom.my = function(totalScale = 0.2,
   }
 }
 
-# profile from the article: Fluid flow through rough fractures in rocks. II: A new matchingmodel for rough rock fractures
-ogilve.corr.profile = function(ML=0.5, TL=0, MinMF=0, MaxMF=1) function(lambda) {
+#' Correlation profile with linear cut-off
+#' 
+#' @param ML Length of correlation cut-off
+#' @param TL Width of linear cut-off fade
+#' @param MinMF Minimal correlation
+#' @param MaxMF Maximal correlation
+#' @references
+#' Steven R. Ogilvie, Evgeny Isakov, Paul W.J. Glover,
+#' Fluid flow through rough fractures in rocks. II: A new matching model for rough rock fractures,
+#' Earth and Planetary Science Letters, Volume 241, Issues 3–4, 2006, https://doi.org/10.1016/j.epsl.2005.11.041.
+#' 
+#' @export
+ogilvie.corr.profile = function(ML=0.5, TL=0, MinMF=0, MaxMF=1) function(lambda) {
   ifelse(lambda >= ML+TL/2, 1, ifelse(lambda <= ML-TL/2, 0, (ML-TL/2-lambda)*(lambda-(ML+3*TL/2))/(TL*TL) ))*(MaxMF-MinMF)+MinMF
 }
 
 # spectral density based on Brown: Simple mathematical model of a rough fracture
-seam.geom.brown = function(scale=1, alpha=2, corr.profile, closed=0.1, gap=NA, beta.make = FALSE, beta.shape = 4)  function(refine,seed) {
+fracture.geom.brown = function(scale=1, alpha=2, corr.profile, closed=0.1, gap=NA, beta.make = FALSE, beta.shape = 4)  function(refine,seed) {
   n = 6 * refine
   m = 5 * refine
   
@@ -151,7 +173,7 @@ seam.geom.brown = function(scale=1, alpha=2, corr.profile, closed=0.1, gap=NA, b
 }
 
 
-plot.seam_field = function(obj, field="f1", col.palette=c("black","red","yellow"), pch=16, cex=1, asp=1, ...){
+plot.fracture_field = function(obj, field="f1", col.palette=c("black","red","yellow"), pch=16, cex=1, asp=1, ...){
   col = as.vector(obj[[field]])
   col = (col-min(col))/(max(col)-min(col))
   col = colorRamp(col.palette)(col)
@@ -164,7 +186,7 @@ plot.seam_field = function(obj, field="f1", col.palette=c("black","red","yellow"
 
 exp.spectrum = function(scale=1, alpha=2) function(k) scale/(k^alpha)
 
-seam.geom.fields = function(
+fracture.geom.fields = function(
     N, M,
     mat = diag(c(1,1)),
     A = diag(c(1/N,1/M)) %*% mat,
@@ -246,19 +268,19 @@ seam.geom.fields = function(
     }
   } else stop("bonds should be of length 2")}
   ret = list(f1 = f1, f2 = f2, points = pA, scales = Scales, mat=mat, A=A, f1_mean=f1_mean, f1_sd=f1_sd, f2_mean=f2_mean, f2_sd=f2_sd)
-  class(ret) = "seam_field"
+  class(ret) = "fracture_field"
   ret
 }
 
 
-seam.geom = function(refine=1, ...) {
+fracture.geom = function(refine=1, ...) {
   n = 6 * refine
   m = 5 * refine
   
   N = 5*n
   M = m
 
-  ret = seam.geom.fields(N, M, mat = matrix(c( 5, 0, 3, 1),2,2), ...)
+  ret = fracture.geom.fields(N, M, mat = matrix(c( 5, 0, 3, 1),2,2), ...)
 
   f1 = ret$f1
   f2 = ret$f2
@@ -324,7 +346,7 @@ seam.geom = function(refine=1, ...) {
 }
 
 
-seam.touching = function(obj,touch="exclude") {
+fracture.touching = function(obj,touch="exclude") {
   P = obj$points
   i = obj$triangles
   sel = P$f1 == P$f2
@@ -360,7 +382,7 @@ seam.touching = function(obj,touch="exclude") {
 #'
 #' @export
 #' @import rgl
-seam3d = function(obj,type=c("top","bottom"),top="top" %in% type,bottom="bottom" %in% type,middle="middle" %in% type,col=c(2,3,4), add=FALSE) {
+fracture3d = function(obj,type=c("top","bottom"),top="top" %in% type,bottom="bottom" %in% type,middle="middle" %in% type,col=c(2,3,4), add=FALSE) {
   if (length(col) == 1) col = rep(col,3)
   iv = as.vector(t(obj$triangles))
   if (!add) {
@@ -404,7 +426,7 @@ save.msh = function(obj, filename,type=c("top","bottom"),top="top" %in% type,bot
   close(f)
 }
 
-seam.cut = function(obj, eps = 1e-9){
+fracture.cut = function(obj, eps = 1e-9){
   snap = function(x) ifelse(x > -eps & x < eps, 0, ifelse(x > 1-eps & x < 1+eps, 1, x))
   i = obj$triangles
   sel = obj$points$x >= -eps & obj$points$x <= 1+eps & obj$points$y >= -eps & obj$points$y <= 1+eps
@@ -426,7 +448,7 @@ seam.cut = function(obj, eps = 1e-9){
   ret
 }
 
-seam.volume = function(obj) {
+fracture.volume = function(obj) {
   v = obj$points[,c("x","y")]
   v1 = v[obj$triangles[,2],] - v[obj$triangles[,1],]
   v2 = v[obj$triangles[,3],] - v[obj$triangles[,1],]

@@ -1,5 +1,5 @@
 
-seam.balls.rand = function(k, T, Rmin, Rmax, dist = function(k,Rmin,Rmax) runif(k,Rmin,Rmax)){
+fracture.balls.rand = function(k, T, Rmin, Rmax, dist = function(k,Rmin,Rmax) runif(k,Rmin,Rmax)){
   p = pmax(0, T$h - 2 * (Rmin+margin))
   
   nB = data.frame(
@@ -20,7 +20,7 @@ seam.balls.rand = function(k, T, Rmin, Rmax, dist = function(k,Rmin,Rmax) runif(
   if (! (all(nB$x > nB$f2 + nB$r + margin) && all(nB$x < nB$f1 - nB$r - margin))) stop("balls do not fit in triangles")
 }
 
-seam.balls = function(obj,
+fracture.balls = function(obj,
                       K = 4000,
                       Rmax = 0.01,
                       Rmin = 0.01,
