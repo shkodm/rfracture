@@ -1,3 +1,8 @@
+#' Linear distribution over triangle
+#'
+#' Takes a sample from a distribution which is a linear function over a triangle
+#'
+#' @export
 rtri = function(n, h1,h2,h3) {
   a = runif(n)
   b = runif(n)
@@ -26,7 +31,3 @@ rtri = function(n, h1,h2,h3) {
   data.frame(w1=a,w2=b,w3=c,ht=ht,h=h,w4=h/ht)
 }
 
-#ret = rtri(20000,-1,2,2)
-#plot(ret$w1,ret$w2,asp=1,xlim=c(0,1),ylim=c(0,1))
-#library(rgl)
-#plot3d(ret$w1,ret$w2,ret$h,xlim=c(0,1),ylim=c(0,1))

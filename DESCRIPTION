@@ -1,13 +1,21 @@
 Package: seamgeom
-Title: What the Package Does (One Line, Title Case)
+Title: Package for generation of fracture geometries
 Version: 0.0.0.9000
 Authors@R: 
-    person(given = "First",
-           family = "Last",
+    person(given = "Łukasz",
+           family = "Łaniewski-Wołłk",
            role = c("aut", "cre"),
-           email = "first.last@example.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: What license it uses
+           email = "llaniewski@meil.pw.edu.pl",
+           comment = c(ORCID = "0000-0002-3026-5881"))
+Description: This package can be used to generate stochastic geometries of rock fractures in a consistent and reproducible manner.
+Depends:
+    R (>= 3.5),
+Imports:
+    rgl,
+Suggests:
+    devtools,
+    roxygen2,
+    testthat
+License: GPLv3
 Encoding: UTF-8
 LazyData: true

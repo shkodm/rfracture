@@ -1,6 +1,3 @@
-library(fields)
-source("rtri.R")
-
 
 seam.balls.rand = function(k, T, Rmin, Rmax, dist = function(k,Rmin,Rmax) runif(k,Rmin,Rmax)){
   p = pmax(0, T$h - 2 * (Rmin+margin))

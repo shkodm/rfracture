@@ -356,7 +356,10 @@ seam.touching = function(obj,touch="exclude") {
   
 }
 
-
+#' Makes a 3d plot of the fracture
+#'
+#' @export
+#' @import rgl
 seam3d = function(obj,type=c("top","bottom"),top="top" %in% type,bottom="bottom" %in% type,middle="middle" %in% type,col=c(2,3,4), add=FALSE) {
   if (length(col) == 1) col = rep(col,3)
   iv = as.vector(t(obj$triangles))
