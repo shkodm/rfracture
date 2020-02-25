@@ -78,6 +78,18 @@ ordered_rnorm_spectrum = function(f, k=2, seed, length_one=FALSE) {
 #' @param widen the level of widen effect (see Description)
 #' @param widen_grad the inclination of the widen effect
 #' 
+#' @example 
+#' seed = 123
+#' par(mfrow=c(2,2))
+#' ret = fracture_matrix(dims=c(50,50),span = diag(2),seed=seed)
+#' plot(ret)
+#' ret = fracture_matrix(dims=c(50,50),span = matrix(c(1,1,-1,1),2,2),seed=seed)
+#' plot(ret)
+#' ret = fracture_matrix(dims=c(50,50),span = diag(2)*2,seed=seed)
+#' plot(ret)
+#' ret = fracture_matrix(dims=c(50,50),span = diag(2)*2,period=diag(2)*2,seed=seed)
+#' plot(ret)
+#' 
 #' @export
 fracture_matrix = function(
     dims = c(10,10),
@@ -147,38 +159,4 @@ fracture_matrix = function(
   class(ret) = "fracture_matrix"
   ret
 }
-
-seed = 123
-par(mfrow=c(2,2))
-ret = fracture_matrix(dims=c(50,50),span = diag(2),seed=seed)
-plot(ret)
-ret = fracture_matrix(dims=c(50,50),span = matrix(c(1,1,-1,1),2,2),seed=seed)
-plot(ret)
-ret = fracture_matrix(dims=c(50,50),span = diag(2)*2,seed=seed)
-plot(ret)
-ret = fracture_matrix(dims=c(50,50),span = diag(2)*2,period=diag(2)*2,seed=seed)
-plot(ret)
-
-
-set.seed(122)
-a = runif(1,0,2*pi)
-S = matrix(c(cos(a),sin(a),-sin(a),cos(a)),2,2)
-ret1 = fracture_matrix(dims=c(50,50),span = S,period=S,seed=seed)
-plot(ret1)
-set.seed(125)
-a = runif(1,0,2*pi)
-S = matrix(c(cos(a),sin(a),-sin(a),cos(a)),2,2)
-ret2 = fracture_matrix(dims=c(50,50),span = S,period=S,seed=seed)
-plot(ret2)
-range(ret1$f1 - ret2$f1)
-
-
-
-ret = fracture_matrix(dims=c(50,50),span = diag(2)*2)
-plot(ret)
-
-
-
-image(ret$f1)
-
 
