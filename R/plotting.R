@@ -65,14 +65,18 @@ border3d = function(obj, f1, f2, add=FALSE, ...) {
 #' @export
 plot.fracture_matrix = function(obj, field="f1", col.palette=c("black","red","yellow"), pch=16, cex=1, asp=1, ...) {
   if (! field %in% names(obj)) stop(field, "is not in obj")
-  col = as.vector(obj[[field]])
-  col = (col-min(col))/(max(col)-min(col))
-  col = colorRamp(col.palette)(col)
-  col = rgb(col,max=255)
-  plot(obj$points[,1], obj$points[,2], col=col, pch=pch, cex=cex, asp=asp, ...)
-  arrows(0, 0, obj$span[,1], obj$span[,2], angle = 15)
-  seg = function(a,b) segments(a[,1],a[,2],b[,1],b[,2])
-  seg(cbind(-1,0:5) %*% obj$period, cbind(6,0:5) %*% obj$period)
-  seg(cbind(0:5,-1) %*% obj$period, cbind(0:5,6) %*% obj$period)
+  if (length(obj$dims) == 1) {
+    matplot(ret$points,cbind(ret$f1,ret$f2), lty=1, type="l", asp=asp, ...)
+  } else if (length(obj$dims) == 2) {
+    col = as.vector(obj[[field]])
+    col = (col-min(col))/(max(col)-min(col))
+    col = colorRamp(col.palette)(col)
+    col = rgb(col,max=255)
+    plot(obj$points[,1], obj$points[,2], col=col, pch=pch, cex=cex, asp=asp, ...)
+    arrows(0, 0, obj$span[,1], obj$span[,2], angle = 15)
+    seg = function(a,b) segments(a[,1],a[,2],b[,1],b[,2])
+    seg(cbind(-1,0:5) %*% obj$period, cbind(6,0:5) %*% obj$period)
+    seg(cbind(0:5,-1) %*% obj$period, cbind(0:5,6) %*% obj$period)
+  } else stop("Plot not implemented with highdimensional fractures")
 }
 

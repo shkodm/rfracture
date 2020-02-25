@@ -38,7 +38,7 @@ ordered_rnorm_spectrum = function(f, k=2, seed, length_one=FALSE) {
   names(ftot) = nm
   fmax = do.call(pmax, lapply(ftot,abs))
   ord = do.call(order,c(list(fmax), ftot))
-  ftot = ftot[ord,]
+  ftot = ftot[ord,,drop=FALSE]
   totsize = nrow(ftot)
   
   ftot_op = -ftot
@@ -98,9 +98,9 @@ fracture_matrix = function(
     power.spectrum = exp.spectrum(),
     corr.profile = function(k) 0,
     closed = 0.1, gap, seed, length_one = FALSE) {
-  p_ = as.matrix(do.call(expand.grid,lapply(dims,seq_1)))
+  p_ = expand_seq(dims,seq_1)
   p = p_ %*% span
-  f_ = as.matrix(do.call(expand.grid,lapply(dims,seq_circ)))
+  f_ = expand_seq(dims,seq_circ)
   f = f_ %*% solve(t(span))
   freq = sqrt(rowSums(f^2))
   
@@ -112,12 +112,14 @@ fracture_matrix = function(
   wavelength = 1/freq
   power = power.spectrum(freq)
   power[is.infinite(power)] = 0
+  if (any(power < 0)) stop("Negative power spectrum")
+  rad = sqrt(power)
   corr.prof = corr.profile(wavelength)
   if (any(abs(corr.prof) > 1)) stop("Correlation outside of [-1,1] interval")
   corr.angle = atan(corr.prof)
 
-  corr.coef = list((cos(corr.angle) * coef[,1] + sin(corr.angle) * coef[,2]) * power,
-    (sin(corr.angle) * coef[,1] + cos(corr.angle) * coef[,2]) * power)
+  corr.coef = list((cos(corr.angle) * coef[,1] + sin(corr.angle) * coef[,2]) * rad,
+    (sin(corr.angle) * coef[,1] + cos(corr.angle) * coef[,2]) * rad)
 
   fields = lapply(corr.coef, function(x) {
     dim(x) = dims
