@@ -28,7 +28,7 @@ expand_seq = function(x, fun=seq_len, matrix=TRUE) {
 #' @export
 ordered_rnorm_spectrum = function(f, k=2, seed, length_one=FALSE) {
   if (! missing(seed)) set.seed(seed)
-  f = apply(f,2,as.integer)
+  f = apply(f,2,round)
   if (class(f) == "matrix") f = as.data.frame(f)
   size = max(sapply(f,max))
   D = ncol(f)
@@ -40,9 +40,6 @@ ordered_rnorm_spectrum = function(f, k=2, seed, length_one=FALSE) {
   ord = do.call(order,c(list(fmax), ftot))
   ftot = ftot[ord,]
   totsize = nrow(ftot)
-  
-  plot(ftot,type="n",asp=1)
-  text(ftot, labels = seq_len(nrow(ftot)))
   
   ftot_op = -ftot
   f$i = seq_len(nrow(f))
@@ -151,11 +148,29 @@ fracture_matrix = function(
   ret
 }
 
+seed = 123
+par(mfrow=c(2,2))
+ret = fracture_matrix(dims=c(50,50),span = diag(2),seed=seed)
+plot(ret)
+ret = fracture_matrix(dims=c(50,50),span = matrix(c(1,1,-1,1),2,2),seed=seed)
+plot(ret)
+ret = fracture_matrix(dims=c(50,50),span = diag(2)*2,seed=seed)
+plot(ret)
+ret = fracture_matrix(dims=c(50,50),span = diag(2)*2,period=diag(2)*2,seed=seed)
+plot(ret)
 
-ret = fracture_matrix(dims=c(50,50),span = matrix(c(1,1,-1,1),2,2))
-plot(ret)
-ret = fracture_matrix(dims=c(50,50),span = diag(2))
-plot(ret)
+
+set.seed(122)
+a = runif(1,0,2*pi)
+S = matrix(c(cos(a),sin(a),-sin(a),cos(a)),2,2)
+ret1 = fracture_matrix(dims=c(50,50),span = S,period=S,seed=seed)
+plot(ret1)
+set.seed(125)
+a = runif(1,0,2*pi)
+S = matrix(c(cos(a),sin(a),-sin(a),cos(a)),2,2)
+ret2 = fracture_matrix(dims=c(50,50),span = S,period=S,seed=seed)
+plot(ret2)
+range(ret1$f1 - ret2$f1)
 
 
 
