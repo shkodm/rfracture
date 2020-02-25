@@ -102,8 +102,17 @@ fracture_matrix = function(
 
   Power = power.spectrum(f_len)
   Power[is.infinite(Power)] = 0
+  corr = corr.profile(1/f_len)
+  corr.angle = atan(corr)
+  
+  coef = coef * Power
     
-  coef * Power
+  lapply(seq_len(ncol(coef)),function(i) {
+    a = coef[,i]
+    dim(a) = dims
+    fft(a,inverse = TRUE)
+    a
+  })
   
   Scales = data.frame(
     i  = (1:nrow(fA))[sel],
