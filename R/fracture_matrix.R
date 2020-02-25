@@ -88,97 +88,82 @@ fracture_matrix = function(
     period = diag(nrow=length(dims)),
     power.spectrum = exp.spectrum(),
     corr.profile = function(k) 0,
-    closed = 0.1, gap, seed, length_one = FALSE, bonds, cut=TRUE, widen=0, widen_grad=1) {
+    closed = 0.1, gap, seed, length_one = FALSE) {
   p_ = as.matrix(do.call(expand.grid,lapply(dims,seq_1)))
   p = p_ %*% span
   f_ = as.matrix(do.call(expand.grid,lapply(dims,seq_circ)))
   f = f_ %*% solve(t(span))
-  f_len = sqrt(rowSums(f^2))
+  freq = sqrt(rowSums(f^2))
   
-  f_per = fA %*% t(period)
+  f_per = f %*% t(period)
   sel = rowSums(abs(round(f_per) - f_per) > 1e-6) == 0
   coef = matrix(0, nrow(f_per), 2)
   coef[sel,] = ordered_rnorm_spectrum(f_per[sel,,drop=FALSE], k = 2, seed = seed, length_one = length_one)
 
-  Power = power.spectrum(f_len)
-  Power[is.infinite(Power)] = 0
-  corr = corr.profile(1/f_len)
-  corr.angle = atan(corr)
-  
-  coef = coef * Power
-    
-  lapply(seq_len(ncol(coef)),function(i) {
-    a = coef[,i]
-    dim(a) = dims
-    fft(a,inverse = TRUE)
-    a
+  wavelength = 1/freq
+  power = power.spectrum(freq)
+  power[is.infinite(power)] = 0
+  corr.prof = corr.profile(wavelength)
+  if (any(abs(corr.prof) > 1)) stop("Correlation outside of [-1,1] interval")
+  corr.angle = atan(corr.prof)
+
+  corr.coef = list((cos(corr.angle) * coef[,1] + sin(corr.angle) * coef[,2]) * power,
+    (sin(corr.angle) * coef[,1] + cos(corr.angle) * coef[,2]) * power)
+
+  fields = lapply(corr.coef, function(x) {
+    dim(x) = dims
+    Re(fft(x, inverse = TRUE))
   })
   
-  Scales = data.frame(
-    i  = (1:nrow(fA))[sel],
-    kx = as.integer(fA[sel,1]),
-    ky = as.integer(fA[sel,2]))
-  Scales$k = sqrt(Scales$kx^2 + Scales$ky^2)
-  Scales = Scales[Scales$k != 0,]
-  Scales$Power = spectrum(Scales$k)
+  ret = list()
+  c1 = sum((power)[sel])
+  c2 = sum((power * (2*sin(corr.angle)*cos(corr.angle)))[sel])
+  cov.theoretical = matrix(c(c1,c2,c2,c1),2,2)
+  cov.final = cov(cbind(as.vector(fields[[1]]),as.vector(fields[[2]])))
+  var.midline = sum(((cos(corr.angle) + sin(corr.angle))^2*power)[sel])/2
+  var.diff = sum(((cos(corr.angle) - sin(corr.angle))^2*power)[sel])*2
   
-  MaxK = max(Scales$kx, Scales$ky, -Scales$kx, -Scales$ky)
-  
-  RN = ordered_rnorm_mat(MaxK*2+1,MaxK*2+1,3,seed=seed,length_one = length_one)
-  
-  Scales$RNIndex = ifelse(Scales$kx<0, MaxK*2+1 +Scales$kx, Scales$kx) + ifelse(Scales$ky<0, MaxK*2+1 +Scales$ky, Scales$ky)*(MaxK*2+1) + 1
-  Scales$corr = corr.profile(1/Scales$k)
-  Scales$corr.angle = atan(Scales$corr)
-  Scales$PowerR1F1 = Scales$Power * cos(Scales$corr.angle)
-  Scales$PowerR2F1 = Scales$Power * sin(Scales$corr.angle)
-  Scales$PowerR1F2 = Scales$Power * sin(Scales$corr.angle)
-  Scales$PowerR2F2 = Scales$Power * cos(Scales$corr.angle)
-  
-  K = matrix(0,N,M)
-  K[Scales$i] = Scales$PowerR1F1 * RN[[1]][Scales$RNIndex] + Scales$PowerR2F1 * RN[[2]][Scales$RNIndex]
-  f1 = Re(fft(K,inverse=TRUE))
-  K[Scales$i] = Scales$PowerR1F2 * RN[[1]][Scales$RNIndex] + Scales$PowerR2F2 * RN[[2]][Scales$RNIndex]
-  f2 = Re(fft(K,inverse=TRUE))
-  
-  Scales$PowerR1Diff = Scales$PowerR1F1 - Scales$PowerR1F2
-  Scales$PowerR2Diff = Scales$PowerR2F1 - Scales$PowerR2F2
-  diff_sd = sqrt(sum(Scales$PowerR1Diff^2 + Scales$PowerR2Diff^2))
-  f1_sd = sqrt(sum(Scales$PowerR1F1^2 + Scales$PowerR2F1^2))
-  f2_sd = sqrt(sum(Scales$PowerR1F2^2 + Scales$PowerR2F2^2))
-  f1_mean = 0
-  f2_mean = 0
-  if (is.na(gap)) gap = -qnorm(closed,mean=0,sd=diff_sd)
-  f1 = f1 + gap/2
-  f1_mean = f1_mean + gap/2
-  f2 = f2 - gap/2
-  f2_mean = f2_mean - gap/2
-  
-  sel = f1 < f2
-  fm = (f1 + f2)/2
-  f1[sel] = fm[sel]
-  f2[sel] = fm[sel]
-  h2 = f1 - fm
-  widen_fac = (pnorm(h2,sd=1/(sqrt(2*pi)*widen_grad/(2*widen)))*2-1)*widen
-  f1 = f1 + widen_fac
-  f2 = f2 - widen_fac
-  if (!missing(bonds)) { if (length(bonds) == 2) {
-    shift = mean(bonds)
-    f1 = f1 + shift
-    f1_mean = f1_mean + shift
-    f2 = f2 + shift
-    f2_mean = f2_mean + shift
-    Pcut = c(pnorm(bonds,mean=f1_mean,sd=f1_sd),pnorm(bonds,mean=f2_mean,sd=f2_sd))
-    Pcut = max(Pcut[1],1-Pcut[2],Pcut[3],1-Pcut[4])
-    cat("Probability of being out of bonds:", Pcut,"\n")
-    if (cut) {
-      if (Pcut > 1e-2) warning("Probability of being out of bonds is higher then 1%")
-      f1[] = ifelse(f1<bonds[1],bonds[1],ifelse(f1>bonds[2],bonds[2],f1))
-      f2[] = ifelse(f2<bonds[1],bonds[1],ifelse(f2>bonds[2],bonds[2],f2))
+  if (missing(gap)) {
+    if (!missing(closed)) {
+      gap = -qnorm(closed,mean=0,sd=sqrt(var.diff))
+    } else{
+      gap = 0
     }
-  } else stop("bonds should be of length 2")}
-  ret = list(f1 = f1, f2 = f2, points = pA, scales = Scales, mat=mat, A=A, f1_mean=f1_mean, f1_sd=f1_sd, f2_mean=f2_mean, f2_sd=f2_sd)
-  class(ret) = "fracture_field"
+  }
+  ret = list(
+    points = p,
+    f1 = fields[[1]] + gap/2,
+    f2 = fields[[2]] - gap/2,
+    dims = dims,
+    span = span,
+    period = period,
+    cov.theoretical = cov.theoretical,
+    cov.final = cov.final,
+    var.midline = var.midline,
+    var.diff = var.diff,
+    power.spectrum = power.spectrum,
+    corr.profile = corr.profile,
+    gap = gap,
+    prob.closed = pnorm(-gap,0,sd=sqrt(var.diff)),
+    length_one = length_one
+  )
+  class(ret) = "fracture_matrix"
   ret
 }
+
+
+ret = fracture_matrix(dims=c(50,50),span = matrix(c(1,1,-1,1),2,2))
+plot(ret)
+ret = fracture_matrix(dims=c(50,50),span = diag(2))
+plot(ret)
+
+
+
+ret = fracture_matrix(dims=c(50,50),span = diag(2)*2)
+plot(ret)
+
+
+
+image(ret$f1)
 
 
