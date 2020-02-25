@@ -9,7 +9,7 @@ Authors@R:
            comment = c(ORCID = "0000-0002-3026-5881"))
 Description: This package can be used to generate stochastic geometries of rock fractures in a consistent and reproducible manner.
 Depends:
-    R (>= 3.5),
+    R (>= 3.0),
 Imports:
     rgl,
 Suggests:
