@@ -4,10 +4,17 @@
 \alias{exp_spectrum}
 \title{Expotential spectrum}
 \usage{
-exp_spectrum(scale = 1, alpha = 2, length = 1)
+exp_spectrum(
+  scale = 1,
+  fractal.dimension = 2.5,
+  alpha = 7 - 2 * fractal.dimension,
+  length = 1
+)
 }
 \arguments{
 \item{scale}{The scale factor}
+
+\item{fractal.dimension}{Fractal dimension of the spectrum}
 
 \item{alpha}{The exponent}
 

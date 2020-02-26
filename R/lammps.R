@@ -1,9 +1,15 @@
+#' Read and write balls from and to lammps data files
+#' 
+#' @param filename file path
+#' 
+#' @import utils
+#' @export
 read.lammps.data = function(filename) {
   f = file(filename,"r")
   l = readLines(f,11)
   l = strsplit(l," ")
   n = as.integer(l[[3]][1])
-  tab = read.table(f,header=FALSE,nrow=n)
+  tab = read.table(f,header=FALSE,nrows=n)
   close(f)
   dens = tab[,4]
   B = data.frame(r=tab[,3]/2, x=tab[,5], y=tab[,6], z=tab[,7])
@@ -11,7 +17,16 @@ read.lammps.data = function(filename) {
   list(B=B, dens, xlim=lim[,1], ylim=lim[,2], zlim=lim[,3])
 }
 
-
+#' @rdname read.lammps.data
+#' 
+#' @param B balls (data.frame)
+#' @param filename file path
+#' @param density density of balls exported
+#' @param comment comment placed in the header
+#' @param xlim,ylim,zlim extent of the domain exported in the lammps file
+#' 
+#' @import utils
+#' @export
 write.lammps.data = function(B, filename, density=2, comment="R generated balls", xlim=range(B$x), ylim=range(B$y), zlim=range(B$z)) {
   # atom-ID atom-type diameter density x y z
   atoms = data.frame(

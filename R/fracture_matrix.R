@@ -19,6 +19,7 @@ expand_seq = function(x, fun=seq_len, matrix=TRUE) {
 #' @examples
 #' f = expand.grid(0:1,0:1)
 #' ordered_rnorm_spectrum(f, seed=123)
+#' @import stats
 #' @export
 ordered_rnorm_spectrum = function(f, k=2, seed, length_one=FALSE) {
   if (! missing(seed)) set.seed(seed)
@@ -81,6 +82,7 @@ ordered_rnorm_spectrum = function(f, k=2, seed, length_one=FALSE) {
 #' ret = fracture_matrix(dims=c(50,50),span = diag(2)*2,period=diag(2)*2,seed=seed)
 #' plot(ret)
 #' 
+#' @import stats
 #' @export
 fracture_matrix = function(
     dims = c(10,10),

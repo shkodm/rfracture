@@ -1,14 +1,13 @@
 #' Makes a 3d plot of the fracture
 #'
-#' @export
 #' @import rgl
+#' @export
 fracture3d = function(obj,type=c("top","bottom"),top="top" %in% type,bottom="bottom" %in% type,middle="middle" %in% type,col=c(2,3,4), add=FALSE) {
   if (length(col) == 1) col = rep(col,3)
   iv = as.vector(t(obj$triangles))
   if (!add) {
     clear3d()
-    plot3d(diag(3))
-    clear3d()
+    aspect3d("iso")
   }
   if (top) triangles3d(obj$points$f1[iv],obj$points$x[iv],obj$points$y[iv],col=col[1])
   if (bottom) triangles3d(obj$points$f2[iv],obj$points$x[iv],obj$points$y[iv],col=col[2])
@@ -19,10 +18,8 @@ border3d = function(obj, f1, f2, add=FALSE, ...) {
   edges = rbind(obj$triangles[,1:2],obj$triangles[,2:3],obj$triangles[,c(1,3)])
   sel = edges[,1] > edges[,2]
   edges[sel,] = edges[sel,c(2,1)]
-  head(edges)
   edges = edges[order(edges[,1],edges[,2]),]
   a = !duplicated(edges)
-  head(edges[a,])
   sel = which(table(cumsum(a)) == 1)
   edges = edges[a,][sel,]
   
@@ -49,8 +46,7 @@ border3d = function(obj, f1, f2, add=FALSE, ...) {
   t2 = t(t2)
   if (!add) {
     clear3d()
-    plot3d(diag(3))
-    clear3d()
+    aspect3d("iso")
   }
   triangles3d(rbind(t1,t2),...)
 }
@@ -62,16 +58,18 @@ border3d = function(obj, f1, f2, add=FALSE, ...) {
 #' @param col.palette color palette to use for plotting
 #' @param ... other options for plot (scatter plot)
 #' 
+#' @import graphics
+#' @import grDevices
 #' @export
 plot.fracture_matrix = function(obj, field="f1", col.palette=c("black","red","yellow"), pch=16, cex=1, asp=1, ...) {
   if (! field %in% names(obj)) stop(field, "is not in obj")
   if (length(obj$dims) == 1) {
-    matplot(ret$points,cbind(ret$f1,ret$f2), lty=1, type="l", asp=asp, ...)
+    matplot(obj$points,cbind(obj$f1,obj$f2), lty=1, type="l", asp=asp, ...)
   } else if (length(obj$dims) == 2) {
     col = as.vector(obj[[field]])
     col = (col-min(col))/(max(col)-min(col))
     col = colorRamp(col.palette)(col)
-    col = rgb(col,max=255)
+    col = rgb(col,maxColorValue=255)
     plot(obj$points[,1], obj$points[,2], col=col, pch=pch, cex=cex, asp=asp, ...)
     arrows(0, 0, obj$span[,1], obj$span[,2], angle = 15)
     seg = function(a,b) segments(a[,1],a[,2],b[,1],b[,2])
