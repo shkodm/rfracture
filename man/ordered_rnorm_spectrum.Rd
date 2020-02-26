@@ -7,6 +7,8 @@
 ordered_rnorm_spectrum(f, k = 2, seed, length_one = FALSE)
 }
 \arguments{
+\item{f}{table of frequencies (wave numbers)}
+
 \item{k}{number of independent matrices}
 
 \item{seed}{random seed}
@@ -15,4 +17,8 @@ ordered_rnorm_spectrum(f, k = 2, seed, length_one = FALSE)
 }
 \description{
 Generate a matrix of random complex numbers in a consistent order
+}
+\examples{
+f = expand.grid(0:1,0:1)
+ordered_rnorm_spectrum(f, seed=123)
 }

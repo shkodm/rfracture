@@ -8,7 +8,7 @@ fracture_matrix(
   dims = c(10, 10),
   span = diag(nrow = length(dims)),
   period = diag(nrow = length(dims)),
-  power.spectrum = exp.spectrum(),
+  power.spectrum = exp_spectrum(),
   corr.profile = function(k) 0,
   closed = 0.1,
   gap,
@@ -34,15 +34,23 @@ fracture_matrix(
 \item{length_one}{use complex numbers of length one for field generation}
 
 \item{spectrum}{power spectrum of the fields (function of frequency)}
-
-\item{bonds}{upper and lower bonds for centering}
-
-\item{cut}{if TRUE, the fields will be cut to bonds}
-
-\item{widen}{the level of widen effect (see Description)}
-
-\item{widen_grad}{the inclination of the widen effect}
 }
 \description{
 Generate a fracture field matrix
+}
+\examples{
+seed = 123
+par(mfrow=c(2,2))
+ret = fracture_matrix(dims=c(50,50),span = diag(2),seed=seed)
+plot(ret)
+ret = fracture_matrix(dims=c(50,50),span = matrix(c(1,1,-1,1),2,2),seed=seed)
+plot(ret)
+ret = fracture_matrix(dims=c(50,50),span = diag(2)*2,seed=seed)
+plot(ret)
+ret = fracture_matrix(dims=c(50,50),span = diag(2)*2,period=diag(2)*2,seed=seed)
+plot(ret)
+
+}
+\references{
+Brown, S. R. (1995). Simple mathematical model of a rough fracture. Journal of Geophysical Research: Solid Earth, 100(B4), 5941-5952.
 }

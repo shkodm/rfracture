@@ -1,16 +1,10 @@
-#'Generates a sequence of numbers between 0 and 1, without 1
-#'
-#' @param n length of the sequence
+# Generates a sequence of numbers between 0 and 1, without 1
 seq_1 = function(n) (seq_len(n)-1)/n
 
-#'Generates a circular sequence of frequencies (0 to n/2 and -n/2 to 0)
-#'
-#' @param n length of the sequence
+# Generates a circular sequence of frequencies (0 to n/2 and -n/2 to 0)
 seq_circ = function(n) { x = 1:n-1; ifelse(x > n/2, x-n, x) }
 
-#'Expands a grid of sequences (outputs a matrix)
-#'
-#' @param x lengths of sequences to use
+# Expands a grid of sequences (outputs a matrix)
 expand_seq = function(x, fun=seq_len, matrix=TRUE) {
   x = do.call(expand.grid,lapply(x,fun))
   if (matrix) as.matrix(x) else x
@@ -18,11 +12,11 @@ expand_seq = function(x, fun=seq_len, matrix=TRUE) {
 
 #' Generate a matrix of random complex numbers in a consistent order
 #' 
-#' @param f
+#' @param f table of frequencies (wave numbers)
 #' @param k number of independent matrices
 #' @param seed random seed
 #' @param length_one if TRUE, return complex numbers of length 1
-#' @example 
+#' @examples
 #' f = expand.grid(0:1,0:1)
 #' ordered_rnorm_spectrum(f, seed=123)
 #' @export
@@ -73,12 +67,9 @@ ordered_rnorm_spectrum = function(f, k=2, seed, length_one=FALSE) {
 #' @param gap mean gap between upper and lower fields (overwrites closed)
 #' @param seed random seed
 #' @param length_one use complex numbers of length one for field generation
-#' @param bonds upper and lower bonds for centering
-#' @param cut if TRUE, the fields will be cut to bonds
-#' @param widen the level of widen effect (see Description)
-#' @param widen_grad the inclination of the widen effect
-#' 
-#' @example 
+#' @references
+#' Brown, S. R. (1995). Simple mathematical model of a rough fracture. Journal of Geophysical Research: Solid Earth, 100(B4), 5941-5952.
+#' @examples
 #' seed = 123
 #' par(mfrow=c(2,2))
 #' ret = fracture_matrix(dims=c(50,50),span = diag(2),seed=seed)
@@ -95,7 +86,7 @@ fracture_matrix = function(
     dims = c(10,10),
     span = diag(nrow=length(dims)),
     period = diag(nrow=length(dims)),
-    power.spectrum = exp.spectrum(),
+    power.spectrum = exp_spectrum(),
     corr.profile = function(k) 0,
     closed = 0.1, gap, seed, length_one = FALSE) {
   p_ = expand_seq(dims,seq_1)
@@ -161,4 +152,3 @@ fracture_matrix = function(
   class(ret) = "fracture_matrix"
   ret
 }
-
