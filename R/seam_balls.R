@@ -1,25 +1,23 @@
-
-fracture.balls.rand = function(k, T, Rmin, Rmax, dist = function(k,Rmin,Rmax) runif(k,Rmin,Rmax)){
-  p = pmax(0, T$h - 2 * (Rmin+margin))
-  
-  nB = data.frame(
-    tri = sample.int(nrow(T), k, prob = p, replace = TRUE),
-    r = dist(k,Rmin,Rmax)
-  )
-  nB$h1 = P$h[T$i1[nB$tri]] - 2 * (nB$r+margin)
-  nB$h2 = P$h[T$i2[nB$tri]] - 2 * (nB$r+margin)
-  nB$h3 = P$h[T$i3[nB$tri]] - 2 * (nB$r+margin)
-  sel = nB$h1+nB$h2+nB$h3 > 0
-  nB = nB[sel,,drop=FALSE]
-  ret = rtri(nrow(nB),nB$h1,nB$h2,nB$h3)
-  nB$y = P$x[T$i1[nB$tri]]*ret$w1 + P$x[T$i2[nB$tri]]*ret$w2 + P$x[T$i3[nB$tri]]*ret$w3
-  nB$z = P$y[T$i1[nB$tri]]*ret$w1 + P$y[T$i2[nB$tri]]*ret$w2 + P$y[T$i3[nB$tri]]*ret$w3
-  nB$f1 = P$f1[T$i1[nB$tri]]*ret$w1 + P$f1[T$i2[nB$tri]]*ret$w2 + P$f1[T$i3[nB$tri]]*ret$w3
-  nB$f2 = P$f2[T$i1[nB$tri]]*ret$w1 + P$f2[T$i2[nB$tri]]*ret$w2 + P$f2[T$i3[nB$tri]]*ret$w3
-  nB$x = nB$f2 + nB$r + margin + ret$h
-  if (! (all(nB$x > nB$f2 + nB$r + margin) && all(nB$x < nB$f1 - nB$r - margin))) stop("balls do not fit in triangles")
-}
-
+#' Generate balls inside of a 3d fracture
+#' 
+#' @param obj fracture_geom object
+#' @param K target number of balls
+#' @param Rmax,Rmin the limits on radiuses of sizes
+#' @param B set of balls to start from
+#' @param margin target margin distance between balls
+#' @param margin_opt lower limit on margin for optimization
+#' @param relax_iterations number of subiterations for relaxation
+#' @param max_add number of balls added in each iteration
+#' @param overshoot number of balls by which to overshoot target
+#' @param seed random seed
+#' @param mean.neighbor the mean.neighbor buffor size
+#' @param iterations number of iterations
+#' @param dist distribution of radii
+#' @param delete if TRUE, allow the algorithm to delete balls during optimization
+#' @param period the periodicity of the domain
+#' 
+#' @import fields
+#' @export
 fracture.balls = function(obj,
                       K = 4000,
                       Rmax = 0.01,
@@ -29,8 +27,8 @@ fracture.balls = function(obj,
                       margin_opt = margin/3,
                       relax_iterations = 10,
                       max_add = 200,
-                      overshot = 100,
-                      seed,mean.neighbor = 5,
+                      overshoot = 100,
+                      seed, mean.neighbor = 5,
                       iterations = ceiling(1.5*K/max_add),
                       dist = function(k,Rmin,Rmax) runif(k,Rmin,Rmax),
                       delete=TRUE,
@@ -54,7 +52,7 @@ fracture.balls = function(obj,
   if (!missing(seed)) set.seed(seed)
   for (iteration in seq_len(iterations)) {
     if (K+ndel > nrow(B)) {
-      k = min(K + overshot - nrow(B), max_add)
+      k = min(K + overshoot - nrow(B), max_add)
       p = pmax(0, T$h - 2 * (Rmin+margin))
       
       nB = data.frame(

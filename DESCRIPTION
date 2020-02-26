@@ -12,6 +12,7 @@ Depends:
     R (>= 3.0),
 Imports:
     rgl,
+    fields,
 Suggests:
     devtools,
     roxygen2,
