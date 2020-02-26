@@ -103,7 +103,7 @@ fracture_matrix = function(
   coef[sel,] = ordered_rnorm_spectrum(f_per[sel,,drop=FALSE], k = 2, seed = seed, length_one = length_one)
 
   wavelength = 1/freq
-  power = power.spectrum(freq)
+  power = power.spectrum(freq)/(freq^(length(dims)-1))
   power[is.infinite(power)] = 0
   if (any(power < 0)) stop("Negative power spectrum")
   rad = sqrt(power)
