@@ -6,6 +6,16 @@
 \usage{
 rtri(n, h1, h2, h3)
 }
+\arguments{
+\item{n}{number of points to generate}
+
+\item{h1, h2, h3}{weights in corners of triangle}
+}
 \description{
 Takes a sample from a distribution which is a linear function over a triangle
+}
+\examples{
+ret = rtri(1000, 1, 0, 0)
+plot(ret$w1, ret$w2)
+
 }

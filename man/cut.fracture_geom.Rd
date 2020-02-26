@@ -4,12 +4,14 @@
 \alias{cut.fracture_geom}
 \title{Cut the fracture geometry to a box}
 \usage{
-\method{cut}{fracture_geom}(obj, eps = 1e-09)
+\method{cut}{fracture_geom}(x, eps = 1e-09, ...)
 }
 \arguments{
-\item{obj}{fracture_geom object}
+\item{x}{fracture_geom object}
 
 \item{eps}{numerical margin}
+
+\item{...}{other arguments}
 }
 \description{
 Cut the fracture geometry to a box

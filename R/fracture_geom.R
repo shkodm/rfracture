@@ -2,6 +2,8 @@
 #' 
 #' @param width linear dimension of the square cut of the fracture
 #' @param refine refinement level
+#' @param power.spectrum power spectrum of the fields (function of frequency)
+#' @param corr.profile correlation profile between (function of wave length)
 #' @param ... parameters passed to fracture_matrix function
 #' 
 #' @examples
@@ -76,11 +78,12 @@ fracture_geom = function(width=1, refine=1, power.spectrum=exp_spectrum(scale=0.
 
 #' Cut the fracture geometry to a box
 #' 
-#' @param obj fracture_geom object
+#' @param x fracture_geom object
 #' @param eps numerical margin
-#' 
+#' @param ... other arguments
 #' @export
-cut.fracture_geom = function(obj, eps = 1e-9){
+cut.fracture_geom = function(x, eps = 1e-9, ...){
+  obj = x
   width = obj$width
   snap = function(x) ifelse(x > -eps & x < eps, 0, ifelse(x > width-eps & x < width+eps, width, x))
   i = obj$triangles

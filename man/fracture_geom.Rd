@@ -17,13 +17,23 @@ fracture_geom(
 
 \item{refine}{refinement level}
 
+\item{power.spectrum}{power spectrum of the fields (function of frequency)}
+
+\item{corr.profile}{correlation profile between (function of wave length)}
+
 \item{...}{parameters passed to fracture_matrix function}
 }
 \description{
 Generate a 3D fracture geometry with trianglar mesh
 }
 \examples{
-ret = fracture_geom(1, refine=10, corr.profile=function(lambda) 0.9,gap=0.1, power.spectrum=exp_spectrum(scale=0.01,alpha=3))
+ret = fracture_geom(
+  width = 1,
+  refine = 50,
+  corr.profile = function(lambda) 0.9,
+  gap = 0.1,
+  power.spectrum = exp_spectrum(scale=0.004, fractal.dimension=3-0.5)
+)
 fracture3d(ret)
 
 }

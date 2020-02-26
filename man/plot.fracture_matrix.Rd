@@ -5,7 +5,7 @@
 \title{Plot fracture matrix}
 \usage{
 \method{plot}{fracture_matrix}(
-  obj,
+  x,
   field = "f1",
   col.palette = c("black", "red", "yellow"),
   pch = 16,
@@ -15,13 +15,13 @@
 )
 }
 \arguments{
-\item{obj}{fracture matrix to plot}
+\item{x}{fracture matrix to plot}
 
 \item{field}{field to plot ("f1" - upper, "f2" - lower)}
 
 \item{col.palette}{color palette to use for plotting}
 
-\item{...}{other options for plot (scatter plot)}
+\item{pch, cex, asp, ...}{other options for plot (scatter plot)}
 }
 \description{
 Plot fracture matrix

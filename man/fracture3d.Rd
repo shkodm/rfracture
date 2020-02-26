@@ -4,15 +4,16 @@
 \alias{fracture3d}
 \title{Makes a 3d plot of the fracture}
 \usage{
-fracture3d(
-  obj,
-  type = c("top", "bottom"),
-  top = "top" \%in\% type,
-  bottom = "bottom" \%in\% type,
-  middle = "middle" \%in\% type,
-  col = c(2, 3, 4),
-  add = FALSE
-)
+fracture3d(obj, type = c("top", "bottom"), col = c(2, 3, 4), add = FALSE)
+}
+\arguments{
+\item{obj}{the fracture_geom object to plot in 3d}
+
+\item{type}{the surface to plot: top, bottom, middle}
+
+\item{col}{vector of 3 colors used for top, bottom and middle surface}
+
+\item{add}{if TRUE, add plot to existing rgl window}
 }
 \description{
 Makes a 3d plot of the fracture

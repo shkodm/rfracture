@@ -62,7 +62,7 @@ ordered_rnorm_spectrum = function(f, k=2, seed, length_one=FALSE) {
 #' @param dims Dimensions of the fracture matrix (length N)
 #' @param span base spanning the fracture (matrix NxN)
 #' @param period base of periodicity parallelogram
-#' @param spectrum power spectrum of the fields (function of frequency)
+#' @param power.spectrum power spectrum of the fields (function of frequency)
 #' @param corr.profile correlation profile between (function of wave length)
 #' @param closed the probability of fields touching
 #' @param gap mean gap between upper and lower fields (overwrites closed)

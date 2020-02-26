@@ -23,6 +23,8 @@ fracture_matrix(
 
 \item{period}{base of periodicity parallelogram}
 
+\item{power.spectrum}{power spectrum of the fields (function of frequency)}
+
 \item{corr.profile}{correlation profile between (function of wave length)}
 
 \item{closed}{the probability of fields touching}
@@ -32,8 +34,6 @@ fracture_matrix(
 \item{seed}{random seed}
 
 \item{length_one}{use complex numbers of length one for field generation}
-
-\item{spectrum}{power spectrum of the fields (function of frequency)}
 }
 \description{
 Generate a fracture field matrix

@@ -2,6 +2,14 @@
 #'
 #' Takes a sample from a distribution which is a linear function over a triangle
 #'
+#' @param n number of points to generate
+#' @param h1,h2,h3 weights in corners of triangle
+#' 
+#' @examples 
+#' ret = rtri(1000, 1, 0, 0)
+#' plot(ret$w1, ret$w2)
+#' 
+#' @import stats
 #' @export
 rtri = function(n, h1,h2,h3) {
   a = runif(n)

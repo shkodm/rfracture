@@ -1,17 +1,22 @@
 #' Makes a 3d plot of the fracture
-#'
+#' 
+#' @param obj the fracture_geom object to plot in 3d
+#' @param type the surface to plot: top, bottom, middle
+#' @param col vector of 3 colors used for top, bottom and middle surface
+#' @param add if TRUE, add plot to existing rgl window
+#' 
 #' @import rgl
 #' @export
-fracture3d = function(obj,type=c("top","bottom"),top="top" %in% type,bottom="bottom" %in% type,middle="middle" %in% type,col=c(2,3,4), add=FALSE) {
+fracture3d = function(obj, type=c("top","bottom"), col=c(2,3,4), add=FALSE) {
   if (length(col) == 1) col = rep(col,3)
   iv = as.vector(t(obj$triangles))
   if (!add) {
     clear3d()
     aspect3d("iso")
   }
-  if (top) triangles3d(obj$points$f1[iv],obj$points$x[iv],obj$points$y[iv],col=col[1])
-  if (bottom) triangles3d(obj$points$f2[iv],obj$points$x[iv],obj$points$y[iv],col=col[2])
-  if (middle) triangles3d((obj$points$f1+obj$points$f2)[iv]/2,obj$points$x[iv],obj$points$y[iv],col=col[3])
+  if ("top"    %in% type) triangles3d(obj$points$f1[iv],obj$points$x[iv],obj$points$y[iv],col=col[1])
+  if ("bottom" %in% type) triangles3d(obj$points$f2[iv],obj$points$x[iv],obj$points$y[iv],col=col[2])
+  if ("middle" %in% type) triangles3d((obj$points$f1+obj$points$f2)[iv]/2,obj$points$x[iv],obj$points$y[iv],col=col[3])
 }
 
 border3d = function(obj, f1, f2, add=FALSE, ...) {
@@ -53,15 +58,16 @@ border3d = function(obj, f1, f2, add=FALSE, ...) {
 
 #' Plot fracture matrix
 #' 
-#' @param obj fracture matrix to plot
+#' @param x fracture matrix to plot
 #' @param field field to plot ("f1" - upper, "f2" - lower)
 #' @param col.palette color palette to use for plotting
-#' @param ... other options for plot (scatter plot)
+#' @param pch,cex,asp,... other options for plot (scatter plot)
 #' 
 #' @import graphics
 #' @import grDevices
 #' @export
-plot.fracture_matrix = function(obj, field="f1", col.palette=c("black","red","yellow"), pch=16, cex=1, asp=1, ...) {
+plot.fracture_matrix = function(x, field="f1", col.palette=c("black","red","yellow"), pch=16, cex=1, asp=1, ...) {
+  obj = x
   if (! field %in% names(obj)) stop(field, "is not in obj")
   if (length(obj$dims) == 1) {
     matplot(obj$points,cbind(obj$f1,obj$f2), lty=1, type="l", asp=asp, ...)
