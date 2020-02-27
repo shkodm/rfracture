@@ -18,9 +18,11 @@
 #' @examples
 #' library(rgl)
 #' ret = fracture_geom(refine=4)
-#' ret = slice(ret, eps=1e-2, flatten="above")
+#' ret2 = slice(ret, eps=1e-2, value="above")
 #' clear3d()
-#' wire3d(as.mesh3d(ret))
+#' wire3d(as.mesh3d(ret2),col=2)
+#' ret2 = slice(ret, eps=1e-2, value="below")
+#' wire3d(as.mesh3d(ret2),col=3)
 #' 
 #' @export
 slice = function(obj, by="h", flatten="edge", value="all", level=0, eps=1e-10) {
@@ -32,8 +34,6 @@ slice = function(obj, by="h", flatten="edge", value="all", level=0, eps=1e-10) {
   j = rowSums(i)
   tsel = j > 0 & j < 3
   tr = obj$triangles[tsel,]
-  
-  below = j == 3
   
   #sort vertices in triangles so that first is on the other side then other two
   i = i[tsel,]
@@ -66,21 +66,24 @@ slice = function(obj, by="h", flatten="edge", value="all", level=0, eps=1e-10) {
   np_id = np_id[order(np_id)]
   
   p_on_edge = c(i[t == 0,1], i[t == 1, 2], np_id)
-  
   obj$points = rbind(obj$points,np)
+  
+  on_edge = rep(FALSE,nrow(obj$points))
+  on_edge[p_on_edge] = TRUE
+  above = obj$points[,by] >= level & !on_edge
+  below = obj$points[,by] <= level & !on_edge
   
   if (max(abs(obj$points[p_on_edge,by] - level)) > eps) stop("error in slice above ", eps)
   
-  flat = rep(FALSE,nrow(obj$points))
+  
   if (flatten == "edge") {
-    flat[p_on_edge] = TRUE
+    flat = on_edge
   } else if (flatten == "above") {
-    flat[p_on_edge] = TRUE
-    flat = flat | obj$points[,by] >= level
+    flat = on_edge | above
   } else if (flatten == "below") {
-    flat[p_on_edge] = TRUE
-    flat = flat | obj$points[,by] <= level
+    flat = on_edge | below
   } else if (flatten == "none") {
+    flat = rep(FALSE,nrow(obj$points))
   } else stop("Unknown flatten parameter")
   obj$points[flat,by] = level
   if (by == "h") {
@@ -114,6 +117,34 @@ slice = function(obj, by="h", flatten="edge", value="all", level=0, eps=1e-10) {
 
 
   obj$triangles = rbind(obj$triangles[!tsel,], ntr)
+
+  if (value == "edge") {
+    psel = on_edge
+  } else if (value == "above") {
+    psel = on_edge | above
+  } else if (value == "below") {
+    psel = on_edge | below
+  } else if (value == "all") {
+    psel = rep(TRUE,nrow(obj$points))
+  } else if (value == "none") {
+    psel = rep(FALSE,nrow(obj$points))
+  } else stop("Unknown flatten parameter")
+  
+  tsel = psel[obj$triangles]
+  dim(tsel) = dim(obj$triangles)
+  tsel = rowSums(tsel) != 3
+  obj$triangles = obj$triangles[tsel,]
+  
+  psel = rep(FALSE,nrow(obj$points))
+  psel[obj$triangles[,1]] = TRUE
+  psel[obj$triangles[,2]] = TRUE
+  psel[obj$triangles[,3]] = TRUE
+  
+  ni = rep(0,nrow(obj$points))
+  ni[psel] = 1:sum(psel)
+  obj$triangles[] = ni[obj$triangles]
+  if (any(rowSums(obj$triangles == 0) != 0)) stop("what?")
+  obj$points = obj$points[psel,]
 
   return(obj)
 }
