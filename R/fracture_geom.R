@@ -65,6 +65,7 @@ fracture_geom = function(width=1, refine=1, power.spectrum=exp_spectrum(scale=0.
   P = P[sel,]
   
   P$h = P$f1 - P$f2
+  P$fm = (P$f1 + P$f2)/2
   bonds2 = range(P$f1,P$f2)
   cat("Final Bonds:",bonds2[1],bonds2[2],"\n")
   
@@ -132,7 +133,9 @@ volume.fracture_geom = function(x, ...) {
 touching = function(obj,touch="exclude") {
   P = obj$points
   i = obj$triangles
-  sel = P$f1 == P$f2
+  sel = P$f1 <= P$f2
+  P$f1[sel] = P$fm[sel]
+  P$f2[sel] = P$fm[sel]
   
   sel = sel[i]
   dim(sel) = dim(i)

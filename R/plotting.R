@@ -19,6 +19,26 @@ fracture3d = function(obj, type=c("top","bottom"), col=c(2,3,4), add=FALSE) {
   if ("middle" %in% type) triangles3d((obj$points$f1+obj$points$f2)[iv]/2,obj$points$x[iv],obj$points$y[iv],col=col[3])
 }
 
+#' Makes a mesh3d object from fracture
+#' 
+#' @param obj the fracture_geom object to plot in 3d
+#' @param type the surface to plot: top, bottom, middle
+#' @param ... other arguments passed to tmesh3d
+#' 
+#' @import rgl
+#' @export
+as.mesh3d.fracture_geom = function(obj, type="top", ...) {
+  if (type == "top") {
+    P = obj$points[,c("f1","x","y")]
+  } else if (type == "bottom") {
+    P = obj$points[,c("f2","x","y")]
+  } else if (type == "middle") {
+    P = obj$points[,c("fm","x","y")]
+  } else stop("unknown type:", type)
+  tmesh3d(vertices = t(as.matrix(P)), indices = t(as.matrix(obj$triangles)),homogeneous = FALSE, ...)
+}
+
+
 border3d = function(obj, f1, f2, add=FALSE, ...) {
   edges = rbind(obj$triangles[,1:2],obj$triangles[,2:3],obj$triangles[,c(1,3)])
   sel = edges[,1] > edges[,2]

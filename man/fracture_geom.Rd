@@ -29,11 +29,11 @@ Generate a 3D fracture geometry with trianglar mesh
 \examples{
 ret = fracture_geom(
   width = 1,
-  refine = 50,
-  corr.profile = function(lambda) 0.9,
-  gap = 0.1,
-  power.spectrum = exp_spectrum(scale=0.004, fractal.dimension=3-0.5)
+  refine = 10,
+  corr.profile = function(lambda) 0.5,
+  closed=0.1,
+  power.spectrum = exp_spectrum(scale=0.01, alpha=3)
 )
-fracture3d(ret)
+fracture3d(cut(ret))
 
 }
