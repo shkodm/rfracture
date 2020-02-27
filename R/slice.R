@@ -90,7 +90,6 @@ slice = function(obj, by="h", flatten="edge", value="all", level=0, eps=1e-10) {
     obj$points[flat,"f1"] = obj$points[flat,"fm"] + level/2
     obj$points[flat,"f2"] = obj$points[flat,"fm"] - level/2
   }
-
   id = matrix(id,ncol=2)
 
   ntr = NULL
@@ -132,7 +131,7 @@ slice = function(obj, by="h", flatten="edge", value="all", level=0, eps=1e-10) {
   
   tsel = psel[obj$triangles]
   dim(tsel) = dim(obj$triangles)
-  tsel = rowSums(tsel) != 3
+  tsel = rowSums(tsel) == 3
   obj$triangles = obj$triangles[tsel,]
   
   psel = rep(FALSE,nrow(obj$points))
