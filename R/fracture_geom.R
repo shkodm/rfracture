@@ -17,11 +17,21 @@
 #' fracture3d(cut(ret))
 #'
 #' @export
-fracture_geom = function(width=1, refine=1, power.spectrum=exp_spectrum(scale=0.01,alpha=2.5), corr.profile=ogilvie.corr.profile(0.5), ...) {
-  n = 6 * refine
-  m = 5 * refine
+fracture_geom = function(width=1, refine=1, power.spectrum=exp_spectrum(scale=0.01,alpha=2.5), corr.profile=ogilvie.corr.profile(0.5), method=c("triangles","diagonals"), ...) {
+  method = match.arg(method)
   period = matrix(c(width,0,0,width),2,2)
-  ret = fracture_matrix(c(5*n, m), span = matrix(c( 5*width, 0, 3*width, width),2,2), period=period, power.spectrum=power.spectrum, corr.profile=corr.profile, ...)
+  if (method == "triangles") {
+    n = 6 * refine
+    m = 5 * refine
+    dims = c(5*n, m)
+    span = matrix(c( 5*width, 0, 3*width, width),2,2)
+  } else if (method == "diagonals") {
+    n = 5 * refine
+    m = 5 * refine
+    dims = c(n, m)
+    span = matrix(c(width, 0, 0, width),2,2)
+  }
+  ret = fracture_matrix(dims, span = span, period=period, power.spectrum=power.spectrum, corr.profile=corr.profile, ...)
   
   f1 = ret$f1
   f2 = ret$f2
@@ -30,16 +40,27 @@ fracture_geom = function(width=1, refine=1, power.spectrum=exp_spectrum(scale=0.
   B = ret$points[,2]
   dim(B) = ret$dims
   
-  A = rbind(A[(5*n-refine+1):(5*n),1:m]-width*5,     A[1:(n+refine+1),1:m])
-  B = rbind(B[(5*n-refine+1):(5*n),1:m]-width*3, B[1:(n+refine+1),1:m])
-  f1 = rbind(f1[(5*n-refine+1):(5*n),1:m], f1[1:(n+refine+1),1:m])
-  f2 = rbind(f2[(5*n-refine+1):(5*n),1:m], f2[1:(n+refine+1),1:m])
-  
-  A = cbind(A[,(1*refine+1):(5*refine)],A,A[,1:(refine+1)])
-  B = cbind(B[,(1*refine+1):(5*refine)]-width,B,B[,1:(refine+1)]+width)
-  f1 = cbind(f1[,(1*refine+1):(5*refine)],f1,f1[,1:(refine+1)])
-  f2 = cbind(f2[,(1*refine+1):(5*refine)],f2,f2[,1:(refine+1)])
-  
+  if (method == "triangles") {
+    A = rbind(A[(5*n-refine+1):(5*n),1:m]-width*5,     A[1:(n+refine+1),1:m])
+    B = rbind(B[(5*n-refine+1):(5*n),1:m]-width*3, B[1:(n+refine+1),1:m])
+    f1 = rbind(f1[(5*n-refine+1):(5*n),1:m], f1[1:(n+refine+1),1:m])
+    f2 = rbind(f2[(5*n-refine+1):(5*n),1:m], f2[1:(n+refine+1),1:m])
+    
+    A = cbind(A[,(1*refine+1):(5*refine)],A,A[,1:(refine+1)])
+    B = cbind(B[,(1*refine+1):(5*refine)]-width,B,B[,1:(refine+1)]+width)
+    f1 = cbind(f1[,(1*refine+1):(5*refine)],f1,f1[,1:(refine+1)])
+    f2 = cbind(f2[,(1*refine+1):(5*refine)],f2,f2[,1:(refine+1)])
+  } else if (method == "diagonals") {
+    A  = rbind(A[(n-refine+1):(n),]-width, A, A[1:refine,1:m]+width)
+    B  = rbind( B[(n-refine+1):(n),],  B,  B[1:refine,])
+    f1 = rbind(f1[(n-refine+1):(n),], f1, f1[1:refine,])
+    f2 = rbind(f2[(n-refine+1):(n),], f2, f2[1:refine,])
+    
+    A  = cbind( A[,(n-refine+1):(n)],  A,  A[,1:refine])
+    B  = cbind( B[,(n-refine+1):(n)]-width, B, B[,1:refine]+width)
+    f1 = cbind(f1[,(n-refine+1):(n)], f1, f1[,1:refine])
+    f2 = cbind(f2[,(n-refine+1):(n)], f2, f2[,1:refine])
+  } else stop("unknown method")
   P = data.frame(x = as.vector(A),y = as.vector(B))
   P$f1 = as.vector(f1)
   P$f2 = as.vector(f2)
@@ -67,7 +88,7 @@ fracture_geom = function(width=1, refine=1, power.spectrum=exp_spectrum(scale=0.
   P$h = P$f1 - P$f2
   P$fm = (P$f1 + P$f2)/2
   bonds2 = range(P$f1,P$f2)
-  cat("Final Bonds:",bonds2[1],bonds2[2],"\n")
+#  cat("Final Bonds:",bonds2[1],bonds2[2],"\n")
   
   ret$width = width
   ret$points=P
@@ -163,3 +184,24 @@ touching = function(obj,touch="exclude") {
   return(obj)
 }
 
+fracture_geom_diagonals = function(width=1,dims=c(5,5)*refine,refine=1,...){
+  span=diag(2)*width
+  ret = fracture_matrix(dims=dims, span=span, ...)
+  ret$points = as.data.frame(ret$points)
+  names(ret$points) = c("x","y")
+  ret$points$f1 = as.vector(ret$f1)
+  ret$points$f2 = as.vector(ret$f2)
+  ret$points$fm = (ret$points$f1+ret$points$f2)/2
+  ret$points$h = ret$points$f1-ret$points$f2
+  I = 1:nrow(ret$points)
+  n = ret$dims[1]
+  m = ret$dims[2]
+  dim(I) = c(n,m)
+  sel = sample(c(TRUE,FALSE),size = (n-1)*(m-1),replace = TRUE)
+  tr = cbind(
+    as.vector(I[2:n-1, 2:n-1]), as.vector(I[2:n-1, 2:n]), as.vector(I[2:n, 2:n]), as.vector(I[2:n, 2:n-1])
+  )
+  ret$triangles = rbind(tr[ sel,c(1,2,3)],tr[ sel,c(3,4,1)],tr[!sel,c(2,3,4)],tr[!sel,c(4,1,2)])
+  class(ret) = "fracture_geom"
+  ret
+}
