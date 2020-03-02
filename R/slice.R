@@ -25,7 +25,7 @@
 #' wire3d(as.mesh3d(ret2),col=3)
 #' 
 #' @export
-slice = function(obj, by="h", flatten="edge", value="all", level=0, eps=1e-10) {
+slice = function(obj, by="h", flatten="edge", value="all", level=0, eps=1e-10, verbose=FALSE) {
   # select points below level
   psel = obj$points[,by] < level
   
@@ -93,27 +93,30 @@ slice = function(obj, by="h", flatten="edge", value="all", level=0, eps=1e-10) {
   id = matrix(id,ncol=2)
 
   ntr = NULL
+  edge = NULL
   sel = !is.na(id[,1]) & !is.na(id[,2])
-  cat(sum(sel),"triangles trimmed\n")
+  if (verbose) cat(sum(sel),"triangles trimmed\n")
   ntr = rbind(ntr,
     cbind(tr[sel,1],id[sel,1],id[sel,2]),
     cbind(tr[sel,2],id[sel,2],id[sel,1]),
     cbind(tr[sel,2],tr[sel,3],id[sel,2]))
   sel = is.na(id[,1]) & !is.na(id[,2])
-  cat(sum(sel),"triangles cut through 1st vertex\n")
+  if (verbose) cat(sum(sel),"triangles cut through 1st vertex\n")
   ntr = rbind(ntr,
               cbind(tr[sel,1],tr[sel,2],id[sel,2]),
               cbind(tr[sel,2],tr[sel,3],id[sel,2]))
   sel = !is.na(id[,1]) & is.na(id[,2])
-  cat(sum(sel),"triangles cut through 2nd vertex\n")
+  if (verbose) cat(sum(sel),"triangles cut through 2nd vertex\n")
   ntr = rbind(ntr,
               cbind(tr[sel,1],id[sel,1],tr[sel,3]),
               cbind(tr[sel,2],tr[sel,3],id[sel,1]))
   sel = is.na(id[,1]) & is.na(id[,2])
-  cat(sum(sel),"triangles cut on edge\n")
+  if (verbose) cat(sum(sel),"triangles cut on edge\n")
   ntr = rbind(ntr,
               cbind(tr[sel,1],tr[sel,2],tr[sel,3]))
 
+  sel = (id[,1] != id[,2])
+  edge = rbind(edge, cbind(id[sel,1],id[sel,2]))
 
   obj$triangles = rbind(obj$triangles[!tsel,], ntr)
 
@@ -129,21 +132,28 @@ slice = function(obj, by="h", flatten="edge", value="all", level=0, eps=1e-10) {
     psel = rep(FALSE,nrow(obj$points))
   } else stop("Unknown flatten parameter")
   
+  
   tsel = psel[obj$triangles]
   dim(tsel) = dim(obj$triangles)
   tsel = rowSums(tsel) == 3
   obj$triangles = obj$triangles[tsel,]
+  esel = psel[edge]
+  dim(esel) = dim(edge)
   
   psel = rep(FALSE,nrow(obj$points))
   psel[obj$triangles[,1]] = TRUE
   psel[obj$triangles[,2]] = TRUE
   psel[obj$triangles[,3]] = TRUE
+  psel[edge[,1]] = TRUE
+  psel[edge[,2]] = TRUE
   
   ni = rep(0,nrow(obj$points))
   ni[psel] = 1:sum(psel)
   obj$triangles[] = ni[obj$triangles]
+  edge[] = ni[edge]
   if (any(rowSums(obj$triangles == 0) != 0)) stop("what?")
   obj$points = obj$points[psel,]
+  obj$edge = edge
 
   return(obj)
 }
