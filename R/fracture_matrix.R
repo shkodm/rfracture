@@ -48,7 +48,7 @@ ordered_rnorm_spectrum = function(f, k=2, seed, length_one=FALSE) {
   if (length_one) {
     W = RN[fmerge$j,,drop=FALSE] + Conj(RN[fmerge$k,,drop=FALSE])
     W = W / Mod(W)
-    W[fmerge$j == 1,,drop=FALSE] = 0
+    #W[fmerge$j == 1,,drop=FALSE] = 0
   } else {
     W = RN[fmerge$j,,drop=FALSE]
   }
