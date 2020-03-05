@@ -22,7 +22,7 @@ sp = lapply(seq_len(nrow(tab)), function(i) {
   length_one = tab$length_one[i]
   #ret = fracture_geom(width=1, refine=refine, corr.profile=function(lambda) 1,gap=0.05, power.spectrum=power.spectrum, seed=123, method=method)
   pb$tick()
-  clusterExport(cl, c("refine","method","power.spectrum","nx"))
+  clusterExport(cl, c("refine","method","power.spectrum","nx","length_one"))
   ny = parSapplyLB(cl, seq_len(repetitions), function(j) {
     library(rfracture)
     ret = fracture_matrix(5*refine, corr.profile=function(lambda) 1,gap=0.05, power.spectrum=power.spectrum,length_one = length_one)

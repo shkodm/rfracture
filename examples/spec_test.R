@@ -71,8 +71,10 @@ abline(v=5*refine/2)
 matplot(freq, sp, log="xy", col=as.integer(tab$refine_f),type="n", ylim=c(1e-10,0.02^2))
 for (i in 1:ncol(sp)) {
   #points(freq, sp[,i], pch=ifelse(freq <= 5*tab$refine[i]/2,15,0)+1, col=as.integer(tab$refine_f[i]))
-  sel = freq <= 5*tab$refine[i]/2
+  qs = 5*tab$refine[i]/2
+  sel = freq <= qs
   lines(freq[sel], sp[sel,i], col=as.integer(tab$refine_f[i]))
+  lines(freq, power.spectrum(freq) * sqrt(1 - (freq/qs)^2))
   #points(freq[sel], sp[sel,i], col=as.integer(tab$refine_f[i]))
 }
 lines(freq, power.spectrum(freq))
