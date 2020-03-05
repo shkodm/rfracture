@@ -45,7 +45,7 @@ tab$refine_f = factor(tab$refine)
 
 freq = range(sapply(sp, function(x) range(x$freq)))
 freq = seq(freq[1],freq[2],len=200)
-plot(freq, power.spectrum(freq), type="l",log="y")
+plot(freq, power.spectrum(freq), type="l",log="xy")
 for (i in 1:length(sp)) {
   lines(sp[[i]]$freq, sp[[i]]$spec,col=as.integer(tab$refine_f[i]))
 }
