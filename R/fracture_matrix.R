@@ -104,8 +104,8 @@ fracture_matrix = function(
 
   wavelength = 1/freq
   n = length(dims)
-  Sn = n*pi^(n/2)/gamma(n/2+1)/2
-  power = power.spectrum(freq)/(Sn*freq^(n-1))
+  #Sn = n*pi^(n/2)/gamma(n/2+1)/2
+  power = power.spectrum(freq)
   power[is.infinite(power)] = 0
   if (any(power < 0)) stop("Negative power spectrum")
   rad = sqrt(power)
