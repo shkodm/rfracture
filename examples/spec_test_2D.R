@@ -46,14 +46,14 @@ tab$length_one_f = factor(tab$length_one)
 
 freq = range(sapply(sp, function(x) range(x$freq)))
 freq = seq(freq[1],freq[2],len=200)
-plot(freq, 2*freq*power.spectrum(freq), type="l",log="xy")
+plot(freq, 2*freq*power.spectrum(freq), type="l",log="y")
 for (i in 1:length(sp)) {
   freq = sp[[i]]$freq
   spec = sp[[i]]$spec
   points(freq, spec, col=as.integer(tab$refine_f[i]), pch=as.integer(tab$length_one_f[i]))
   lines(freq, 2*power.spectrum(freq)*freq * (1-(freq/max(freq*1.5))^2),lty=2,col=as.integer(tab$refine_f[i]))
   mfreq = (5*tab$refine[i]/2)
-  freq = -mfreq:mfreq
+  freq = (1-mfreq):mfreq
   M = outer(freq, freq, function(x,y) power.spectrum(sqrt(x*x+y*y)))
   lines(freq, colSums(M),col=as.integer(tab$refine_f[i]))
 }
@@ -65,7 +65,7 @@ legend("bottomleft",legend = c(levels(tab$refine_f), levels(tab$length_one_f))
 
 for (i in 1:nrow(tab)) {
   mfreq = (5*tab$refine[i]/2)
-  freq = -mfreq:mfreq
+  freq = (1-mfreq):mfreq
   M = outer(freq, freq, function(x,y) power.spectrum(sqrt(x*x+y*y)))
   lines(freq, power.spectrum(freq)*2*freq, col=4,lwd=3)
   lines(freq, colSums(M),col=3,lwd=3)

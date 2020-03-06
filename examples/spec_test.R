@@ -30,7 +30,8 @@ sp = sapply(seq_len(nrow(tab)), function(i) {
     #ny = replicate(repetitions, {
     ret = fracture_geom(width=1, refine=refine, corr.profile=function(lambda) 1,gap=0.05, power.spectrum=power.spectrum, method=method)
     
-    d = rnorm(2)
+    #d = rnorm(2)
+    d = c(0,rnorm(1))
     d = d/sqrt(sum(d^2))
     ret$points$zeta2 = (ret$points$x - 0.5)*d[1] + (ret$points$y - 0.5)*d[2]
     ret$points$zeta1 = (ret$points$x - 0.5)*d[2] - (ret$points$y - 0.5)*d[1]
@@ -85,7 +86,7 @@ for (i in 1:ncol(sp)) {
   qs = 5*tab$refine[i]/2
   sel = freq <= qs
   lines(freq[sel], sp[sel,i], col=as.integer(tab$refine_f[i]))
-  lines(freq, pi*power.spectrum(freq) * sqrt(1 - (freq/qs)^2))
+  lines(freq, 2*freq*power.spectrum(freq) * sqrt(1 - (freq/qs)^2))
   #points(freq[sel], sp[sel,i], col=as.integer(tab$refine_f[i]))
 }
 lines(freq, power.spectrum(freq))

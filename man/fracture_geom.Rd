@@ -9,6 +9,7 @@ fracture_geom(
   refine = 1,
   power.spectrum = exp_spectrum(scale = 0.01, alpha = 2.5),
   corr.profile = ogilvie.corr.profile(0.5),
+  method = c("triangles", "diagonals"),
   ...
 )
 }

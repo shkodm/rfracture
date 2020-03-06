@@ -4,7 +4,15 @@
 \alias{slice}
 \title{Slices the fracture geometry}
 \usage{
-slice(obj, by = "h", flatten = "edge", value = "all", level = 0, eps = 1e-10)
+slice(
+  obj,
+  by = "h",
+  flatten = "edge",
+  value = "all",
+  level = 0,
+  eps = 1e-10,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{obj}{fracture_geom object}
@@ -31,8 +39,10 @@ Slices the fracture with respect to a specific property, and threshold level
 \examples{
 library(rgl)
 ret = fracture_geom(refine=4)
-ret = slice(ret, eps=1e-2, flatten="above")
+ret2 = slice(ret, eps=1e-2, value="above")
 clear3d()
-wire3d(as.mesh3d(ret))
+wire3d(as.mesh3d(ret2),col=2)
+ret2 = slice(ret, eps=1e-2, value="below")
+wire3d(as.mesh3d(ret2),col=3)
 
 }
