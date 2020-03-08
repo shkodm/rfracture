@@ -148,7 +148,7 @@ slice = function(obj, by="h", flatten="edge", value="all", level=0, eps=1e-10, v
   psel[edge[,2]] = TRUE
   
   ni = rep(0,nrow(obj$points))
-  ni[psel] = 1:sum(psel)
+  ni[psel] = seq_len(sum(psel))
   obj$triangles[] = ni[obj$triangles]
   edge[] = ni[edge]
   if (any(rowSums(obj$triangles == 0) != 0)) stop("what?")
