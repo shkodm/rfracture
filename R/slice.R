@@ -8,6 +8,7 @@
 #' @param value type of the returned object (see return value)
 #' @param flatten if to snap values to level
 #' @param eps the numerical accuracy
+#' @param verbose print information about cutting
 #' 
 #' @return
 #' If value is "all", the function returns the same fracture_geom object, with some of the triangles sliced.
@@ -58,8 +59,12 @@ slice = function(obj, by="h", flatten="edge", value="all", level=0, eps=1e-10, v
   id[t == 0] = NA
   id[t == 1] = NA
   id = as.integer(factor(id)) + nrow(obj$points)
+  id[t == 0] = i[t == 0,1]
+  id[t == 1] = i[t == 1,2]
   
-  npsel = ! (duplicated(id) | is.na(id)) 
+  id_degen = (id <= nrow(obj$points))
+  
+  npsel = ! (duplicated(id) | id_degen) 
   np = np[npsel,]
   np_id = id[npsel]
   np = np[order(np_id),]
@@ -91,26 +96,27 @@ slice = function(obj, by="h", flatten="edge", value="all", level=0, eps=1e-10, v
     obj$points[flat,"f2"] = obj$points[flat,"fm"] - level/2
   }
   id = matrix(id,ncol=2)
-
+  id_degen = matrix(id_degen,ncol=2)
+  
   ntr = NULL
   edge = NULL
-  sel = !is.na(id[,1]) & !is.na(id[,2])
+  sel = !id_degen[,1] & !id_degen[,2]
   if (verbose) cat(sum(sel),"triangles trimmed\n")
   ntr = rbind(ntr,
     cbind(tr[sel,1],id[sel,1],id[sel,2]),
     cbind(tr[sel,2],id[sel,2],id[sel,1]),
     cbind(tr[sel,2],tr[sel,3],id[sel,2]))
-  sel = is.na(id[,1]) & !is.na(id[,2])
+  sel = id_degen[,1] & !id_degen[,2]
   if (verbose) cat(sum(sel),"triangles cut through 1st vertex\n")
   ntr = rbind(ntr,
               cbind(tr[sel,1],tr[sel,2],id[sel,2]),
               cbind(tr[sel,2],tr[sel,3],id[sel,2]))
-  sel = !is.na(id[,1]) & is.na(id[,2])
+  sel = !id_degen[,1] & id_degen[,2]
   if (verbose) cat(sum(sel),"triangles cut through 2nd vertex\n")
   ntr = rbind(ntr,
               cbind(tr[sel,1],id[sel,1],tr[sel,3]),
               cbind(tr[sel,2],tr[sel,3],id[sel,1]))
-  sel = is.na(id[,1]) & is.na(id[,2])
+  sel = id_degen[,1] & id_degen[,2]
   if (verbose) cat(sum(sel),"triangles cut on edge\n")
   ntr = rbind(ntr,
               cbind(tr[sel,1],tr[sel,2],tr[sel,3]))
@@ -156,4 +162,17 @@ slice = function(obj, by="h", flatten="edge", value="all", level=0, eps=1e-10, v
   obj$edge = edge
 
   return(obj)
+}
+
+#' Cut the fracture geometry to a box
+#' 
+#' @param x fracture_geom object
+#' @param ... other arguments for slice
+#' @export
+cut.fracture_geom = function(x, ...){
+  x = slice(x, by="x", level=0, value="above", ...)
+  x = slice(x, by="x", level=x$width, value="below", ...)
+  x = slice(x, by="y", level=0, value="above", ...)
+  x = slice(x, by="y", level=x$width, value="below", ...)
+  x
 }
