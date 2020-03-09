@@ -13,20 +13,19 @@ power.spectrum = exp_spectrum(scale=0.02,alpha=3.5)
 #power.spectrum = function(f) 0.02^2*exp(-2*(f/5)^2)
 repetitions = 200
 
-tab = expand.grid(refine=refine, length_one = c(TRUE,FALSE), stringsAsFactors = FALSE)
+tab = expand.grid(refine=refine, length_one = c(FALSE), stringsAsFactors = FALSE)
 pb <- progress_bar$new(total = nrow(tab))
 
 sp = lapply(seq_len(nrow(tab)), function(i) {
   refine = tab$refine[i]
   length_one = tab$length_one[i]
   #ret = fracture_geom(width=1, refine=refine, corr.profile=function(lambda) 1,gap=0.05, power.spectrum=power.spectrum, seed=123, method=method)
-  pb$tick()
   cl <- makeCluster(cores-1)
   clusterExport(cl, c("refine","method","power.spectrum","nx","length_one"), envir = environment())
   spl = parLapplyLB(cl, seq_len(repetitions), function(j) {
     library(rfracture)
     #ret = fracture_matrix(5*refine, corr.profile=function(lambda) 1,gap=0.05, power.spectrum=power.spectrum,length_one = length_one)
-    ret = fracture_matrix(c(1,1)*5*refine, corr.profile=function(lambda) 1, gap=0.05, power.spectrum=power.spectrum, length_one = length_one)
+    ret = fracture_matrix(c(1,1)*5*refine, corr.profile=function(lambda) 1, gap=0.05, power.iso=power.spectrum, length_one = length_one, gauss.order = 3)
     #x = c(as.vector(ret$points[1:(5*refine),1]),1)
     #y = c(as.vector(ret$f1[,1]),ret$f1[1,1])
     y = ret$f1
@@ -38,6 +37,7 @@ sp = lapply(seq_len(nrow(tab)), function(i) {
   stopCluster(cl)
   sp = spl[[1]]
   sp$spec = rowMeans(sapply(spl, function(x) x$spec))
+  pb$tick()
   sp
 })
 
@@ -46,7 +46,7 @@ tab$length_one_f = factor(tab$length_one)
 
 freq = range(sapply(sp, function(x) range(x$freq)))
 freq = seq(freq[1],freq[2],len=200)
-plot(freq, 2*freq*power.spectrum(freq), type="l",log="y")
+plot(freq, 2*freq*power.spectrum(freq), type="l",log="xy")
 for (i in 1:length(sp)) {
   freq = sp[[i]]$freq
   spec = sp[[i]]$spec

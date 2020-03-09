@@ -7,7 +7,7 @@ cores=detectCores()
 cl <- makeCluster(cores-1)
 
 nx = seq(-0.25,0.25,len=300)
-refine = 2^(0:5)
+refine = 2^(0:4)
 freq = NULL
 method = "diagonals"
 power.spectrum = exp_spectrum(scale=0.02,alpha=3.5)
@@ -28,7 +28,7 @@ sp = sapply(seq_len(nrow(tab)), function(i) {
     library(rfracture)
     
     #ny = replicate(repetitions, {
-    ret = fracture_geom(width=1, refine=refine, corr.profile=function(lambda) 1,gap=0.05, power.iso=power.spectrum, method=method)
+    ret = fracture_geom(width=1, refine=refine, corr.profile=function(lambda) 1,gap=0.05, power.iso=power.spectrum, method=method, gauss.order = 3)
     
     #d = rnorm(2)
     d = c(0,rnorm(1))
