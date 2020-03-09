@@ -90,41 +90,13 @@ fracture_geom = function(width=1, refine=1, power.spectrum=exp_spectrum(scale=0.
   bonds2 = range(P$f1,P$f2)
 #  cat("Final Bonds:",bonds2[1],bonds2[2],"\n")
   
+  ret$f1 = NULL
+  ret$f2 = NULL
   ret$width = width
   ret$points=P
   ret$triangles=i
   class(ret) = "fracture_geom"
   return(ret)
-}
-
-#' Cut the fracture geometry to a box
-#' 
-#' @param x fracture_geom object
-#' @param eps numerical margin
-#' @param ... other arguments
-#' @export
-cut.fracture_geom = function(x, eps = 1e-9, ...){
-  obj = x
-  width = obj$width
-  snap = function(x) ifelse(x > -eps & x < eps, 0, ifelse(x > width-eps & x < width+eps, width, x))
-  i = obj$triangles
-  sel = obj$points$x >= -eps & obj$points$x <= width+eps & obj$points$y >= -eps & obj$points$y <= width+eps
-  sel = sel[i]
-  dim(sel) = dim(i)
-  tocut = (! sel[,1]) & sel[,2] & sel[,3]
-  obj$points[i[tocut,1],] = (obj$points[i[tocut,1],] + obj$points[i[tocut,3],])/2
-  
-  sel = obj$points$x >= -eps & obj$points$x <= width+eps & obj$points$y >= -eps & obj$points$y <= width+eps
-  ni = rep(0,nrow(obj$points))
-  ni[sel] = 1:sum(sel)
-  i[] = ni[i]
-  i = i[rowSums(i == 0) == 0,]
-  ret = obj
-  ret$points = obj$points[sel,]
-  ret$points$x = snap(ret$points$x)
-  ret$points$y = snap(ret$points$y)
-  ret$triangles = i
-  ret
 }
 
 #' Calculate the volume of fracture geometry
@@ -141,6 +113,37 @@ volume.fracture_geom = function(x, ...) {
   a = abs(1/2*(v1[,1]*v2[,2] - v1[,2]*v2[,1]))
   h = 1/3*(obj$points$h[obj$triangles[,1]] + obj$points$h[obj$triangles[,2]] + obj$points$h[obj$triangles[,3]])
   sum(a*h)
+}
+
+surface_summary = function(obj, surface=c("f1","f2","h","fm")) {
+  #  surface = match.arg(surface)
+  p  = cbind(obj$points$x, obj$points$y)
+  p1 = p[obj$triangles[,1],]
+  p2 = p[obj$triangles[,2],]
+  p3 = p[obj$triangles[,3],]
+  
+  altitude = function(p1,p2,p3) {
+    v = p1 - p2
+    w = p3 - p2
+    g = v - rowSums(v*w) / rowSums(w*w) * w
+    g / rowSums(g*v)
+  }
+  v = p1 - p2
+  w = p3 - p2
+  a = abs(v[,2]*w[,1] - v[,1]*w[,2])/2
+  area = sum(a)
+  sapply(surface, function(surface) {
+    h = obj$points[[surface]]
+    h = cbind(h[obj$triangles[,1]], h[obj$triangles[,2]], h[obj$triangles[,3]])
+    grad = h[,1] * altitude(p1,p2,p3) + h[,2] * altitude(p2,p3,p1) + h[,3] * altitude(p3,p1,p2)
+    c(
+      area = area,
+      volume = sum(a*rowMeans(h)),
+      h = sum(a*rowMeans(h))/area,
+      h2 = sum(a*rowMeans(h^2))/area, # todo: approximation
+      h2prim = sum(a * rowSums(grad^2))/area
+    )
+  })
 }
 
 #' Extract the overlapping part of two surfaces of a fracture
