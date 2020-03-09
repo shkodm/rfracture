@@ -57,7 +57,7 @@ stopCluster(cl)
 
 tab$refine_f = factor(tab$refine)
 tab$method_f = factor(tab$method)
-matplot(freq, sp, log="xy", col=as.integer(tab$refine_f), pch=as.integer(tab$method_f),type="b")
+matplot(freq, sp, log="xy", col=as.integer(tab$refine_f), pch=as.integer(tab$method_f), type="b")
 
 lines(freq, power.spectrum(freq)*freq/pi)
 legend("bottomleft",legend = c(levels(tab$refine_f), levels(tab$method_f))
