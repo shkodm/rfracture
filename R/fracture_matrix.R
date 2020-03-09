@@ -128,7 +128,7 @@ fracture_matrix = function(
   cov.final = cov(cbind(as.vector(fields[[1]]),as.vector(fields[[2]])))
   var.midline = sum(((cos(corr.angle) + sin(corr.angle))^2*power)[sel])/2
   var.diff = sum(((cos(corr.angle) - sin(corr.angle))^2*power)[sel])*2
-  
+  var.prime = sum((power*(2*pi*freq)^2)[sel])
   if (missing(gap)) {
     if (!missing(closed)) {
       gap = -qnorm(closed,mean=0,sd=sqrt(var.diff))
@@ -147,6 +147,7 @@ fracture_matrix = function(
     cov.final = cov.final,
     var.midline = var.midline,
     var.diff = var.diff,
+    var.prime = var.prime,
     power.spectrum = power.spectrum,
     corr.profile = corr.profile,
     gap = gap,
