@@ -28,7 +28,7 @@ sp = sapply(seq_len(nrow(tab)), function(i) {
     library(rfracture)
     
     #ny = replicate(repetitions, {
-    ret = fracture_geom(width=1, refine=refine, corr.profile=function(lambda) 1,gap=0.05, power.spectrum=power.spectrum, method=method)
+    ret = fracture_geom(width=1, refine=refine, corr.profile=function(lambda) 1,gap=0.05, power.iso=power.spectrum, method=method)
     
     #d = rnorm(2)
     d = c(0,rnorm(1))

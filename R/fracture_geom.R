@@ -17,7 +17,7 @@
 #' fracture3d(cut(ret))
 #'
 #' @export
-fracture_geom = function(width=1, refine=1, power.spectrum=exp_spectrum(scale=0.01,alpha=2.5), corr.profile=ogilvie.corr.profile(0.5), method=c("triangles","diagonals"), ...) {
+fracture_geom = function(width=1, refine=1, method=c("triangles","diagonals"), ...) {
   method = match.arg(method)
   period = matrix(c(width,0,0,width),2,2)
   if (method == "triangles") {
@@ -31,7 +31,7 @@ fracture_geom = function(width=1, refine=1, power.spectrum=exp_spectrum(scale=0.
     dims = c(n, m)
     span = matrix(c(width, 0, 0, width),2,2)
   }
-  ret = fracture_matrix(dims, span = span, period=period, power.spectrum=power.spectrum, corr.profile=corr.profile, ...)
+  ret = fracture_matrix(dims, span = span, period=period, ...)
   
   f1 = ret$f1
   f2 = ret$f2
@@ -115,6 +115,12 @@ volume.fracture_geom = function(x, ...) {
   sum(a*h)
 }
 
+#' Summary of surfaces
+#' 
+#' @param obj fracture_geom object
+#' @param surface the variables over which to gather statistics
+#' 
+#' @export
 surface_summary = function(obj, surface=c("f1","f2","h","fm")) {
   #  surface = match.arg(surface)
   p  = cbind(obj$points$x, obj$points$y)

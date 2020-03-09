@@ -4,25 +4,18 @@
 \alias{fracture_geom}
 \title{Generate a 3D fracture geometry with trianglar mesh}
 \usage{
-fracture_geom(
-  width = 1,
-  refine = 1,
-  power.spectrum = exp_spectrum(scale = 0.01, alpha = 2.5),
-  corr.profile = ogilvie.corr.profile(0.5),
-  method = c("triangles", "diagonals"),
-  ...
-)
+fracture_geom(width = 1, refine = 1, method = c("triangles", "diagonals"), ...)
 }
 \arguments{
 \item{width}{linear dimension of the square cut of the fracture}
 
 \item{refine}{refinement level}
 
+\item{...}{parameters passed to fracture_matrix function}
+
 \item{power.spectrum}{power spectrum of the fields (function of frequency)}
 
 \item{corr.profile}{correlation profile between (function of wave length)}
-
-\item{...}{parameters passed to fracture_matrix function}
 }
 \description{
 Generate a 3D fracture geometry with trianglar mesh

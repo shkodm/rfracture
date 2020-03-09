@@ -8,12 +8,14 @@ fracture_matrix(
   dims = c(10, 10),
   span = diag(nrow = length(dims)),
   period = diag(nrow = length(dims)),
-  power.spectrum = exp_spectrum(),
+  power.iso,
+  power.spectrum = function(f) power.iso(sqrt(rowSums(f * f))),
   corr.profile = function(k) 0,
   closed = 0.1,
   gap,
   seed,
-  length_one = FALSE
+  length_one = FALSE,
+  gauss.order = 1
 )
 }
 \arguments{

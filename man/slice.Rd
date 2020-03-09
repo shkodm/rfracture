@@ -26,6 +26,8 @@ slice(
 \item{level}{threshold level on the property}
 
 \item{eps}{the numerical accuracy}
+
+\item{verbose}{print information about cutting}
 }
 \value{
 If value is "all", the function returns the same fracture_geom object, with some of the triangles sliced.

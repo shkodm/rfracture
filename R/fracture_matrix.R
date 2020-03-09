@@ -88,26 +88,48 @@ fracture_matrix = function(
     dims = c(10,10),
     span = diag(nrow=length(dims)),
     period = diag(nrow=length(dims)),
-    power.spectrum = exp_spectrum(),
+    power.iso,
+    power.spectrum = function(f) power.iso(sqrt(rowSums(f*f))),
     corr.profile = function(k) 0,
-    closed = 0.1, gap, seed, length_one = FALSE) {
+    closed = 0.1, gap, seed, length_one = FALSE, gauss.order = 1) {
+  n = length(dims)
   p_ = expand_seq(dims,seq_1)
   p = p_ %*% span
   f_ = expand_seq(dims,seq_circ)
   f = f_ %*% solve(t(span))
-  freq = sqrt(rowSums(f^2))
+
+
+  power = rep(0,nrow(f))
+  
   
   f_per = f %*% t(period)
   sel = rowSums(abs(round(f_per) - f_per) > 1e-6) == 0
   coef = matrix(0, nrow(f_per), 2)
   coef[sel,] = ordered_rnorm_spectrum(f_per[sel,,drop=FALSE], k = 2, seed = seed, length_one = length_one)
 
-  wavelength = 1/freq
-  n = length(dims)
-  #Sn = n*pi^(n/2)/gamma(n/2+1)/2
-  power = power.spectrum(freq)
-  power[is.infinite(power)] = 0
+  if (gauss.order == 1) {
+    power[sel] = power.spectrum(f_per[sel,] %*% solve(t(period)))
+  } else {
+    q = statmod::gauss.quad(gauss.order)
+    qx = as.matrix(do.call(expand.grid,rep(list(q$nodes/2),n)))
+    qw = do.call(expand.grid,rep(list(q$weights/2),n))
+    qw = apply(qw,1,prod)
+    selpow = 0
+    self = t(f_per[sel,])
+    for (i in seq_len(nrow(qx))) {
+      selpow = selpow + qw[i]*power.spectrum(t(self + qx[i,]) %*% solve(t(period)))
+    }
+    power[sel] = selpow
+  }
+  power[1] = 0
   if (any(power < 0)) stop("Negative power spectrum")
+  
+  
+  freq = sqrt(rowSums(f^2))
+  wavelength = 1/freq
+  
+  #Sn = n*pi^(n/2)/gamma(n/2+1)/2
+  
   rad = sqrt(power)
   corr.prof = corr.profile(wavelength)
   if (any(abs(corr.prof) > 1)) stop("Correlation outside of [-1,1] interval")
