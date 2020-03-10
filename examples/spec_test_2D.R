@@ -6,7 +6,7 @@ library(parallel)
 cores=detectCores()
 
 nx = seq(0,1,len=300)
-refine = 2^(1:2)
+refine = 2^(0:4)
 freq = NULL
 method = "diagonals"
 power.spectrum = exp_spectrum(scale=0.02,alpha=3.5)
@@ -21,7 +21,7 @@ sp = lapply(seq_len(nrow(tab)), function(i) {
   length_one = tab$length_one[i]
   #ret = fracture_geom(width=1, refine=refine, corr.profile=function(lambda) 1,gap=0.05, power.spectrum=power.spectrum, seed=123, method=method)
   cl <- makeCluster(cores-1)
-  clusterExport(cl, c("refine","method","power.spectrum","nx","length_one"), envir = environment())
+  clusterExport(cl, c("refine","method","power.spectrum","nx","length_one","myspectrum"), envir = environment())
   spl = parLapplyLB(cl, seq_len(repetitions), function(j) {
     library(rfracture)
     #ret = fracture_matrix(5*refine, corr.profile=function(lambda) 1,gap=0.05, power.spectrum=power.spectrum,length_one = length_one)
@@ -32,7 +32,7 @@ sp = lapply(seq_len(nrow(tab)), function(i) {
     tny = ts(y, deltat = 1/(5*refine))
     #sp = spectrum(tny,plot=FALSE)
     sp = myspectrum(tny)
-    #sp$spec = rowMeans(sp$spec)
+    sp$spec = rowMeans(sp$spec)
     #sp$spec = sp$spec[,1]
     #sp = list(
     #  spec = Mod(fft(y[,1])/nrow(y))^2,
@@ -53,7 +53,8 @@ tab$length_one_f = factor(tab$length_one)
 
 freq = range(sapply(sp, function(x) range(x$freq)))
 freq = seq(freq[1],freq[2],len=200)
-plot(freq, 2*freq*power.spectrum(freq), type="l",log="xy")
+speclim = range(sapply(sp, function(x) range(x$spec)))
+plot(freq, 2*freq*power.spectrum(freq), type="l",log="xy",ylim=speclim)
 for (i in 1:length(sp)) {
   freq = sp[[i]]$freq
   spec = sp[[i]]$spec
