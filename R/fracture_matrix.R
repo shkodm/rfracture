@@ -1,10 +1,13 @@
-# Generates a sequence of numbers between 0 and 1, without 1
+#' Generates a sequence of numbers between 0 and 1, without 1
+#' @export
 seq_1 = function(n) (seq_len(n)-1)/n
 
-# Generates a circular sequence of frequencies (0 to n/2 and -n/2 to 0)
+#' Generates a circular sequence of frequencies (0 to n/2 and -n/2 to 0)
+#' @export
 seq_circ = function(n) { x = 1:n-1; ifelse(x > n/2, x-n, x) }
 
-# Expands a grid of sequences (outputs a matrix)
+#' Expands a grid of sequences (outputs a matrix)
+#' @export
 expand_seq = function(x, fun=seq_len, matrix=TRUE) {
   x = do.call(expand.grid,lapply(x,fun))
   if (matrix) as.matrix(x) else x
@@ -174,7 +177,9 @@ fracture_matrix = function(
     corr.profile = corr.profile,
     gap = gap,
     prob.closed = pnorm(-gap,0,sd=sqrt(var.diff)),
-    length_one = length_one
+    length_one = length_one,
+    gauss.order = gauss.order,
+    spec1D = tapply(power,abs(f[,1]),sum)/2
   )
   class(ret) = "fracture_matrix"
   ret
