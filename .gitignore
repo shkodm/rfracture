@@ -38,3 +38,4 @@ rsconnect/
 .Rbuildignore
 *.Rproj
 
+*.stl
