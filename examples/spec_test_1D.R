@@ -7,7 +7,7 @@ cores=detectCores()
 cl <- makeCluster(cores-1)
 
 nx = seq(0,1,len=300)
-refine = 2^(0:5)
+refine = 2^(1:5)
 freq = NULL
 method = "diagonals"
 power.spectrum = exp_spectrum(scale=0.02,alpha=2)
@@ -15,7 +15,7 @@ power.spectrum = function(f) ifelse(f<5, 0, 0.004/(f^2))
 #power.spectrum = function(f) 0.02^2*exp(-2*(f/5)^2)
 repetitions = 200
 
-tab = expand.grid(refine=refine, gauss.order = 1:3, stringsAsFactors = FALSE)
+tab = expand.grid(refine=refine, gauss.order = 1, stringsAsFactors = FALSE)
 pb <- progress_bar$new(total = nrow(tab))
 
 sp = lapply(seq_len(nrow(tab)), function(i) {
@@ -34,7 +34,8 @@ sp = lapply(seq_len(nrow(tab)), function(i) {
   
   tny = ts(ny, deltat = 1/(5*refine))
   
-  sp = spectrum(tny,plot=FALSE)
+  sp = myspectrum(tny,plot=FALSE)
+  #sp = spectrum(tny,plot=FALSE)
   sp$spec = rowMeans(sp$spec)
   sp
 })
@@ -42,11 +43,11 @@ stopCluster(cl)
 
 tab$refine_f = factor(tab$refine)
 
-freq = range(sapply(sp, function(x) range(x$freq)))
+freq = range(sapply(sp, function(x) range(abs(x$freq))))
 speclim = range({x = sapply(sp, function(x) range(x$spec)); x[x<1e-16] = NA; x}, na.rm = TRUE)
 freq = seq(freq[1],freq[2],len=200)
-plot(freq, power.spectrum(freq),type="l",log="xy",ylim=speclim)
+plot(freq, power.spectrum(freq),type="l",log="y",ylim=speclim, xlab="Frequency [1/m]", ylab="PSD [m2]", lty=2)
 for (i in 1:length(sp)) {
   lines(sp[[i]]$freq, sp[[i]]$spec, col=as.integer(tab$refine_f[i]), pch=tab$gauss.order[i])
 }
-
+legend("topright", legend=levels(tab$refine_f), lty=1, col=1:nlevels(tab$refine_f))

@@ -6,12 +6,12 @@ library(parallel)
 cores=detectCores()
 
 nx = seq(0,1,len=300)
-refine = 2^(0:4)
+refine = 2^(0:5)
 freq = NULL
 method = "diagonals"
 power.spectrum = exp_spectrum(scale=0.02,alpha=3.5)
 #power.spectrum = function(f) 0.02^2*exp(-2*(f/5)^2)
-repetitions = 600
+repetitions = 200
 
 tab = expand.grid(refine=refine, length_one = c(FALSE), stringsAsFactors = FALSE)
 pb <- progress_bar$new(total = nrow(tab))
@@ -25,13 +25,13 @@ sp = lapply(seq_len(nrow(tab)), function(i) {
   spl = parLapplyLB(cl, seq_len(repetitions), function(j) {
     library(rfracture)
     #ret = fracture_matrix(5*refine, corr.profile=function(lambda) 1,gap=0.05, power.spectrum=power.spectrum,length_one = length_one)
-    ret = fracture_matrix(c(1,1)*5*refine, corr.profile=function(lambda) 1, power.iso=power.spectrum, length_one = length_one, gauss.order = 1)
+    ret = fracture_matrix(c(1,1)*5*refine, corr.profile=function(lambda) 1, power.iso=power.spectrum, length_one = length_one, gauss.order = 3)
     #x = c(as.vector(ret$points[1:(5*refine),1]),1)
     #y = c(as.vector(ret$f1[,1]),ret$f1[1,1])
     y = ret$f1
     tny = ts(y, deltat = 1/(5*refine))
-    #sp = spectrum(tny,plot=FALSE)
-    sp = myspectrum(tny)
+    sp = spectrum(tny,plot=FALSE)
+    #sp = myspectrum(tny)
     sp$spec = rowMeans(sp$spec)
     #sp$spec = sp$spec[,1]
     #sp = list(
@@ -54,7 +54,7 @@ tab$length_one_f = factor(tab$length_one)
 freq = range(sapply(sp, function(x) range(x$freq)))
 freq = seq(freq[1],freq[2],len=200)
 speclim = range(sapply(sp, function(x) range(x$spec)))
-plot(freq, 2*freq*power.spectrum(freq), type="l",log="xy",ylim=speclim)
+plot(freq, pi*freq*power.spectrum(freq), type="l",log="xy",ylim=speclim, lty=2)
 for (i in 1:length(sp)) {
   freq = sp[[i]]$freq
   spec = sp[[i]]$spec
