@@ -18,13 +18,10 @@ for (refine in unique(round(exp(seq(log(1),log(80),len=20))))){
     ret2 = slice(ret2, by = "f1", level=1/G - mar, flatten="above")
     ret2 = slice(ret2, by = "f2", level=  0 + mar, flatten="below")
     ret2 = slice(ret2,  value="above")
-    fracture3d(cut(ret2))
+    fracture3d(cut(ret2),edge.col = 4, vertex.col = 4)
     cbind(range(ret2$points$f1, ret2$points$f2), c(mar,1/G-mar), c(0,1/G))
     
     writeSTL(sprintf("seam_test_G%02d_R%02d.stl",round(closed*100),refine))
   }
 }
 
-unique(round(exp(seq(log(1),log(80),len=20))))
-2^(0:6)
-       

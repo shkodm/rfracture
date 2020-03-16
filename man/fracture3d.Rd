@@ -8,8 +8,8 @@ fracture3d(
   obj,
   type = c("top", "bottom"),
   col = c(2, 3, 4),
-  edge.col = 1,
-  vertex.col = 1,
+  edge.col = NA,
+  vertex.col = NA,
   add = FALSE
 )
 }

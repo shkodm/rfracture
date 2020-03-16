@@ -9,8 +9,7 @@
 #' @export
 fracture3d = function(obj, type=c("top","bottom"), col=c(2,3,4), edge.col=NA, vertex.col=NA, add=FALSE) {
   if (length(col) == 1) col = rep(col,3)
-  if (length(edge.col) == 1) edge.col = rep(edge.col,3)
-  if (length(vertex.col) == 1) vertex.col = rep(vertex.col,3)
+  if (length(edge.col) == 1) edge.col = rep(edge.col,2)
   it = as.vector(t(obj$triangles))
   ie = as.vector(t(obj$edge))
   iv = as.vector(t(obj$vertex))
@@ -20,18 +19,18 @@ fracture3d = function(obj, type=c("top","bottom"), col=c(2,3,4), edge.col=NA, ve
   }
   if ("top"    %in% type) {
     if (!is.na(col[1])) triangles3d(obj$points$f1[it],obj$points$x[it],obj$points$y[it],col=col[1])
-    if (!is.na(edge.col[1])) segments3d(obj$points$f1[ie],obj$points$x[ie],obj$points$y[ie],col=edge.col[1])
+    if (!is.na(edge.col[1])) segments3d(obj$points$f1[ie],obj$points$x[ie],obj$points$y[ie],col=rep(ifelse(obj$border,edge.col[1],edge.col[2]),each=2))
     if (!is.na(vertex.col[1])) points3d(obj$points$f1[iv],obj$points$x[iv],obj$points$y[iv],col=vertex.col[1])
   }
   if ("bottom" %in% type) {
     if (!is.na(col[2])) triangles3d(obj$points$f2[it],obj$points$x[it],obj$points$y[it],col=col[2])
-    if (!is.na(edge.col[2])) segments3d(obj$points$f2[ie],obj$points$x[ie],obj$points$y[ie],col=edge.col[2])
-    if (!is.na(vertex.col[2])) points3d(obj$points$f2[iv],obj$points$x[iv],obj$points$y[iv],col=vertex.col[2])
+    if (!is.na(edge.col[1])) segments3d(obj$points$f2[ie],obj$points$x[ie],obj$points$y[ie],col=rep(ifelse(obj$border,edge.col[1],edge.col[2]),each=2))
+    if (!is.na(vertex.col[1])) points3d(obj$points$f2[iv],obj$points$x[iv],obj$points$y[iv],col=vertex.col[1])
   }
   if ("middle" %in% type) {
     if (!is.na(col[3])) triangles3d(obj$points$fm[it],obj$points$x[it],obj$points$y[it],col=col[3])
-    if (!is.na(edge.col[3])) segments3d(obj$points$fm[ie],obj$points$x[ie],obj$points$y[ie],col=edge.col[3])
-    if (!is.na(vertex.col[3])) points3d(obj$points$fm[iv],obj$points$x[iv],obj$points$y[iv],col=vertex.col[3])
+    if (!is.na(edge.col[1])) segments3d(obj$points$fm[ie],obj$points$x[ie],obj$points$y[ie],col=rep(ifelse(obj$border,edge.col[1],edge.col[2]),each=2))
+    if (!is.na(vertex.col[1])) points3d(obj$points$fm[iv],obj$points$x[iv],obj$points$y[iv],col=vertex.col[1])
   }
 }
 

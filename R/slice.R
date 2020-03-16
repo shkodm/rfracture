@@ -28,7 +28,10 @@
 #' @export
 slice = function(obj, by="h", flatten="edge", value="all", cut.triangles=TRUE, cut.edges=TRUE, cut.vertexes=TRUE, level=0, eps=1e-10, verbose=FALSE) {
   # select points below level
-  if (is.null(obj$edge))   obj$edge = matrix(nrow=0, ncol=2)
+  if (is.null(obj$edge)) {
+    obj$edge = matrix(nrow=0, ncol=2)
+    obj$border = logical(0)
+  }
   if (is.null(obj$vertex)) obj$vertex = matrix(nrow=0, ncol=1)
   psel = obj$points[,by] < level
   
@@ -47,6 +50,7 @@ slice = function(obj, by="h", flatten="edge", value="all", cut.triangles=TRUE, c
   j = rowSums(i)
   esel = j > 0 & j < 2
   ed = obj$edge[esel,,drop=FALSE]
+  ed_b = obj$border[esel]
   #sort vertices in triangles so that first is on the other side then other two
   i = i[esel,,drop=FALSE]
   j = j[esel] == 1
@@ -112,8 +116,21 @@ slice = function(obj, by="h", flatten="edge", value="all", cut.triangles=TRUE, c
   ed_id = matrix(id[seq_len(nrow(ed)) + nrow(tr)*2],ncol=1,nrow=nrow(ed))
   ed_id_degen = matrix(id_degen[seq_len(nrow(ed)) + nrow(tr)*2],ncol=1,nrow=nrow(ed))
   
+  if (value == "edge") {
+    edge_is_border = TRUE
+  } else if (value == "above") {
+    edge_is_border = TRUE
+  } else if (value == "below") {
+    edge_is_border = TRUE
+  } else if (value == "all") {
+    edge_is_border = FALSE
+  } else if (value == "none") {
+    edge_is_border = FALSE
+  } else stop("Unknown flatten parameter")
+  
   ntr = NULL
   edge = NULL
+  edge_b = NULL
   sel = !tr_id_degen[,1] & !tr_id_degen[,2]
   if (verbose) cat(sum(sel),"triangles trimmed\n")
   ntr = rbind(ntr,
@@ -137,19 +154,23 @@ slice = function(obj, by="h", flatten="edge", value="all", cut.triangles=TRUE, c
 
   sel = (tr_id[,1] != tr_id[,2])
   edge = rbind(edge, cbind(tr_id[sel,1],tr_id[sel,2]))
+  edge_b = c(edge_b, rep(edge_is_border,sum(sel)))
 
   sel = !ed_id_degen[,1]
   edge = rbind(edge,
     cbind(ed[sel,1],ed_id[sel,1]),
     cbind(ed[sel,2],ed_id[sel,1]))
+  edge_b = c(edge_b, ed_b[sel])
   sel = ed_id_degen[,1]
   edge = rbind(edge,
                cbind(ed[sel,1],ed[sel,2]))
+  edge_b = c(edge_b, ed_b[sel])
   
   vertex = ed_id[,1,drop=FALSE]
   
   obj$triangles = rbind(obj$triangles[!tsel,], ntr)
   obj$edge = rbind(obj$edge[!esel,], edge)
+  obj$border = c(obj$border[!esel], edge_b)
   obj$vertex = rbind(obj$vertex, vertex)
 
   if (value == "edge") {
@@ -175,6 +196,7 @@ slice = function(obj, by="h", flatten="edge", value="all", cut.triangles=TRUE, c
     dim(esel) = dim(obj$edge)
     esel = rowSums(esel) == 2
     obj$edge = obj$edge[esel,]
+    obj$border = obj$border[esel]
   }
   if (cut.vertexes) {
     vsel = psel[obj$vertex]
