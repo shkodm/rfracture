@@ -66,15 +66,28 @@ fracture_geom = function(width=1, refine=1, method=c("triangles","diagonals"), .
   P$f2 = as.vector(f2)
   I = 1:length(A)
   dim(I) = dim(A)
+  if (method == "triangles") {
+    sel = rep(TRUE, (nrow(I) - 1) * (ncol(I) - 1))
+  } else if (method == "diagonals") {
+    sel = sample(c(TRUE,FALSE),size = (nrow(I) - 1) * (ncol(I) - 1), replace = TRUE)
+  }
   i = rbind(cbind(
     as.vector(I[-nrow(I),-ncol(I)]),
     as.vector(I[-1,-ncol(I)]),
     as.vector(I[-nrow(I),-1])
-  ),cbind(
+  )[sel,],cbind(
     as.vector(I[-1,-1]),
     as.vector(I[-nrow(I),-1]),
     as.vector(I[-1,-ncol(I)])
-  ))
+  )[sel,],cbind(
+    as.vector(I[-1,-1]),
+    as.vector(I[-nrow(I),-1]),
+    as.vector(I[-nrow(I),-ncol(I)])
+  )[!sel,],cbind(
+    as.vector(I[-nrow(I),-ncol(I)]),
+    as.vector(I[-1,-ncol(I)]),
+    as.vector(I[-1,-1])
+  )[!sel,])
   
   eps = 1e-10
   sel = P$y < width*(1+1/5)+eps & P$y >= width*(-1/5)-eps
@@ -95,6 +108,8 @@ fracture_geom = function(width=1, refine=1, method=c("triangles","diagonals"), .
   ret$width = width
   ret$points=P
   ret$triangles=i
+  ret$edge = matrix(nrow=0,ncol=2)
+  ret$vertex = matrix(nrow=0,ncol=1)
   class(ret) = "fracture_geom"
   return(ret)
 }
@@ -191,26 +206,4 @@ touching = function(obj,touch="exclude") {
   obj$points=P
   obj$triangles=i
   return(obj)
-}
-
-fracture_geom_diagonals = function(width=1,dims=c(5,5)*refine,refine=1,...){
-  span=diag(2)*width
-  ret = fracture_matrix(dims=dims, span=span, ...)
-  ret$points = as.data.frame(ret$points)
-  names(ret$points) = c("x","y")
-  ret$points$f1 = as.vector(ret$f1)
-  ret$points$f2 = as.vector(ret$f2)
-  ret$points$fm = (ret$points$f1+ret$points$f2)/2
-  ret$points$h = ret$points$f1-ret$points$f2
-  I = 1:nrow(ret$points)
-  n = ret$dims[1]
-  m = ret$dims[2]
-  dim(I) = c(n,m)
-  sel = sample(c(TRUE,FALSE),size = (n-1)*(m-1),replace = TRUE)
-  tr = cbind(
-    as.vector(I[2:n-1, 2:n-1]), as.vector(I[2:n-1, 2:n]), as.vector(I[2:n, 2:n]), as.vector(I[2:n, 2:n-1])
-  )
-  ret$triangles = rbind(tr[ sel,c(1,2,3)],tr[ sel,c(3,4,1)],tr[!sel,c(2,3,4)],tr[!sel,c(4,1,2)])
-  class(ret) = "fracture_geom"
-  ret
 }

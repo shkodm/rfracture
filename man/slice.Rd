@@ -9,6 +9,9 @@ slice(
   by = "h",
   flatten = "edge",
   value = "all",
+  cut.triangles = TRUE,
+  cut.edges = TRUE,
+  cut.vertexes = TRUE,
   level = 0,
   eps = 1e-10,
   verbose = FALSE

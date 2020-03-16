@@ -7,16 +7,32 @@
 #' 
 #' @import rgl
 #' @export
-fracture3d = function(obj, type=c("top","bottom"), col=c(2,3,4), add=FALSE) {
+fracture3d = function(obj, type=c("top","bottom"), col=c(2,3,4), edge.col=1, vertex.col=1, add=FALSE) {
   if (length(col) == 1) col = rep(col,3)
-  iv = as.vector(t(obj$triangles))
+  if (length(edge.col) == 1) edge.col = rep(edge.col,3)
+  if (length(vertex.col) == 1) vertex.col = rep(vertex.col,3)
+  it = as.vector(t(obj$triangles))
+  ie = as.vector(t(obj$edge))
+  iv = as.vector(t(obj$vertex))
   if (!add) {
     clear3d()
     aspect3d("iso")
   }
-  if ("top"    %in% type) triangles3d(obj$points$f1[iv],obj$points$x[iv],obj$points$y[iv],col=col[1])
-  if ("bottom" %in% type) triangles3d(obj$points$f2[iv],obj$points$x[iv],obj$points$y[iv],col=col[2])
-  if ("middle" %in% type) triangles3d((obj$points$f1+obj$points$f2)[iv]/2,obj$points$x[iv],obj$points$y[iv],col=col[3])
+  if ("top"    %in% type) {
+    if (!is.na(col[1])) triangles3d(obj$points$f1[it],obj$points$x[it],obj$points$y[it],col=col[1])
+    if (!is.na(edge.col[1])) segments3d(obj$points$f1[ie],obj$points$x[ie],obj$points$y[ie],col=edge.col[1])
+    if (!is.na(vertex.col[1])) points3d(obj$points$f1[iv],obj$points$x[iv],obj$points$y[iv],col=vertex.col[1])
+  }
+  if ("bottom" %in% type) {
+    if (!is.na(col[2])) triangles3d(obj$points$f2[it],obj$points$x[it],obj$points$y[it],col=col[2])
+    if (!is.na(edge.col[2])) segments3d(obj$points$f2[ie],obj$points$x[ie],obj$points$y[ie],col=edge.col[2])
+    if (!is.na(vertex.col[2])) points3d(obj$points$f2[iv],obj$points$x[iv],obj$points$y[iv],col=vertex.col[2])
+  }
+  if ("middle" %in% type) {
+    if (!is.na(col[3])) triangles3d(obj$points$fm[it],obj$points$x[it],obj$points$y[it],col=col[3])
+    if (!is.na(edge.col[3])) segments3d(obj$points$fm[ie],obj$points$x[ie],obj$points$y[ie],col=edge.col[3])
+    if (!is.na(vertex.col[3])) points3d(obj$points$fm[iv],obj$points$x[iv],obj$points$y[iv],col=vertex.col[3])
+  }
 }
 
 #' Makes a mesh3d object from fracture

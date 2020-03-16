@@ -4,7 +4,14 @@
 \alias{fracture3d}
 \title{Makes a 3d plot of the fracture}
 \usage{
-fracture3d(obj, type = c("top", "bottom"), col = c(2, 3, 4), add = FALSE)
+fracture3d(
+  obj,
+  type = c("top", "bottom"),
+  col = c(2, 3, 4),
+  edge.col = 1,
+  vertex.col = 1,
+  add = FALSE
+)
 }
 \arguments{
 \item{obj}{the fracture_geom object to plot in 3d}
