@@ -7,7 +7,7 @@
 #' 
 #' @import rgl
 #' @export
-fracture3d = function(obj, type=c("top","bottom"), col=c(2,3,4), edge.col=1, vertex.col=1, add=FALSE) {
+fracture3d = function(obj, type=c("top","bottom"), col=c(2,3,4), edge.col=NA, vertex.col=NA, add=FALSE) {
   if (length(col) == 1) col = rep(col,3)
   if (length(edge.col) == 1) edge.col = rep(edge.col,3)
   if (length(vertex.col) == 1) vertex.col = rep(vertex.col,3)
