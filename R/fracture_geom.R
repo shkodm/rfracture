@@ -160,9 +160,11 @@ surface_summary = function(obj, surface=c("f1","f2","h","fm")) {
     c(
       area = area,
       volume = sum(a*rowMeans(h)),
-      h = sum(a*rowMeans(h))/area,
-      h2 = sum(a*rowMeans(h^2))/area, # todo: approximation
-      h2prim = sum(a * rowSums(grad^2))/area
+      min = min(h),
+      max = max(h),
+      mean = sum(a*rowMeans(h))/area,
+      meanSquare = sum(a*rowMeans(h^2))/area, # todo: approximation
+      meanGradSquare = sum(a * rowSums(grad^2))/area
     )
   })
 }

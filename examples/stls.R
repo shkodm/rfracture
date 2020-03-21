@@ -1,3 +1,5 @@
+library(rgl)
+
 alpha = 4.5
 power.iso = function(f) 0.000001*ifelse(f<5,0,(f/5)^-alpha)
 corr.profile = function(lambda) ifelse(lambda<0.5,0.1,0.9)
