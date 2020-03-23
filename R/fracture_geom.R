@@ -12,9 +12,9 @@
 #'   refine = 10,
 #'   corr.profile = function(lambda) 0.5,
 #'   closed=0.1,
-#'   power.spectrum = exp_spectrum(scale=0.01, alpha=3)
+#'   power.iso = exp_spectrum(scale=0.01, alpha=3)
 #' )
-#' fracture3d(cut(ret))
+#' if (require(rgl)) fracture3d(cut(ret))
 #'
 #' @export
 fracture_geom = function(width=1, refine=1, method=c("triangles","diagonals"), ...) {

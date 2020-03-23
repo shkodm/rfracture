@@ -42,12 +42,8 @@ If value is "above", the function returns only the part of the geometry, for whi
 Slices the fracture with respect to a specific property, and threshold level
 }
 \examples{
-library(rgl)
-ret = fracture_geom(refine=4)
-ret2 = slice(ret, eps=1e-2, value="above")
-clear3d()
-wire3d(as.mesh3d(ret2),col=2)
-ret2 = slice(ret, eps=1e-2, value="below")
-wire3d(as.mesh3d(ret2),col=3)
+power.iso = function(f) 0.0001 * f^{-4.5}
+ret = fracture_geom(refine=4, power.iso = power.iso)
+ret2 = slice(ret, value="above")
 
 }

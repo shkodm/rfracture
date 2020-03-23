@@ -75,14 +75,15 @@ ordered_rnorm_spectrum = function(f, k=2, seed, length_one=FALSE) {
 #' Brown, S. R. (1995). Simple mathematical model of a rough fracture. Journal of Geophysical Research: Solid Earth, 100(B4), 5941-5952.
 #' @examples
 #' seed = 123
+#' power.spectrum = function(f) f^{-2.5}
 #' par(mfrow=c(2,2))
-#' ret = fracture_matrix(dims=c(50,50),span = diag(2),seed=seed)
+#' ret = fracture_matrix(dims=c(50,50),span = diag(2), power.iso = power.spectrum, seed=seed)
 #' plot(ret)
-#' ret = fracture_matrix(dims=c(50,50),span = matrix(c(1,1,-1,1),2,2),seed=seed)
+#' ret = fracture_matrix(dims=c(50,50),span = matrix(c(1,1,-1,1),2,2), power.iso = power.spectrum, seed=seed)
 #' plot(ret)
-#' ret = fracture_matrix(dims=c(50,50),span = diag(2)*2,seed=seed)
+#' ret = fracture_matrix(dims=c(50,50),span = diag(2)*2, power.iso = power.spectrum, seed=seed)
 #' plot(ret)
-#' ret = fracture_matrix(dims=c(50,50),span = diag(2)*2,period=diag(2)*2,seed=seed)
+#' ret = fracture_matrix(dims=c(50,50),span = diag(2)*2,period=diag(2)*2, power.iso = power.spectrum, seed=seed)
 #' plot(ret)
 #' 
 #' @import stats

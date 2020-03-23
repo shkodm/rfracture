@@ -42,14 +42,15 @@ Generate a fracture field matrix
 }
 \examples{
 seed = 123
+power.spectrum = function(f) f^{-2.5}
 par(mfrow=c(2,2))
-ret = fracture_matrix(dims=c(50,50),span = diag(2),seed=seed)
+ret = fracture_matrix(dims=c(50,50),span = diag(2), power.iso = power.spectrum, seed=seed)
 plot(ret)
-ret = fracture_matrix(dims=c(50,50),span = matrix(c(1,1,-1,1),2,2),seed=seed)
+ret = fracture_matrix(dims=c(50,50),span = matrix(c(1,1,-1,1),2,2), power.iso = power.spectrum, seed=seed)
 plot(ret)
-ret = fracture_matrix(dims=c(50,50),span = diag(2)*2,seed=seed)
+ret = fracture_matrix(dims=c(50,50),span = diag(2)*2, power.iso = power.spectrum, seed=seed)
 plot(ret)
-ret = fracture_matrix(dims=c(50,50),span = diag(2)*2,period=diag(2)*2,seed=seed)
+ret = fracture_matrix(dims=c(50,50),span = diag(2)*2,period=diag(2)*2, power.iso = power.spectrum, seed=seed)
 plot(ret)
 
 }

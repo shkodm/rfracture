@@ -5,7 +5,6 @@
 #' @param col vector of 3 colors used for top, bottom and middle surface
 #' @param add if TRUE, add plot to existing rgl window
 #' 
-#' @import rgl
 #' @export
 fracture3d = function(obj, type=c("top","bottom"), col=c(2,3,4), edge.col=NA, vertex.col=NA, add=FALSE) {
   if (length(col) == 1) col = rep(col,3)
@@ -18,19 +17,19 @@ fracture3d = function(obj, type=c("top","bottom"), col=c(2,3,4), edge.col=NA, ve
     aspect3d("iso")
   }
   if ("top"    %in% type) {
-    if (!is.na(col[1])) triangles3d(obj$points$f1[it],obj$points$x[it],obj$points$y[it],col=col[1])
-    if (!is.na(edge.col[1])) segments3d(obj$points$f1[ie],obj$points$x[ie],obj$points$y[ie],col=rep(ifelse(obj$border,edge.col[1],edge.col[2]),each=2))
-    if (!is.na(vertex.col[1])) points3d(obj$points$f1[iv],obj$points$x[iv],obj$points$y[iv],col=vertex.col[1])
+    if (!is.na(col[1])) rgl::triangles3d(obj$points$f1[it],obj$points$x[it],obj$points$y[it],col=col[1])
+    if (!is.na(edge.col[1])) rgl::segments3d(obj$points$f1[ie],obj$points$x[ie],obj$points$y[ie],col=rep(ifelse(obj$border,edge.col[1],edge.col[2]),each=2))
+    if (!is.na(vertex.col[1])) rgl::points3d(obj$points$f1[iv],obj$points$x[iv],obj$points$y[iv],col=vertex.col[1])
   }
   if ("bottom" %in% type) {
-    if (!is.na(col[2])) triangles3d(obj$points$f2[it],obj$points$x[it],obj$points$y[it],col=col[2])
-    if (!is.na(edge.col[1])) segments3d(obj$points$f2[ie],obj$points$x[ie],obj$points$y[ie],col=rep(ifelse(obj$border,edge.col[1],edge.col[2]),each=2))
-    if (!is.na(vertex.col[1])) points3d(obj$points$f2[iv],obj$points$x[iv],obj$points$y[iv],col=vertex.col[1])
+    if (!is.na(col[2])) rgl::triangles3d(obj$points$f2[it],obj$points$x[it],obj$points$y[it],col=col[2])
+    if (!is.na(edge.col[1])) rgl::segments3d(obj$points$f2[ie],obj$points$x[ie],obj$points$y[ie],col=rep(ifelse(obj$border,edge.col[1],edge.col[2]),each=2))
+    if (!is.na(vertex.col[1])) rgl::points3d(obj$points$f2[iv],obj$points$x[iv],obj$points$y[iv],col=vertex.col[1])
   }
   if ("middle" %in% type) {
-    if (!is.na(col[3])) triangles3d(obj$points$fm[it],obj$points$x[it],obj$points$y[it],col=col[3])
-    if (!is.na(edge.col[1])) segments3d(obj$points$fm[ie],obj$points$x[ie],obj$points$y[ie],col=rep(ifelse(obj$border,edge.col[1],edge.col[2]),each=2))
-    if (!is.na(vertex.col[1])) points3d(obj$points$fm[iv],obj$points$x[iv],obj$points$y[iv],col=vertex.col[1])
+    if (!is.na(col[3])) rgl::triangles3d(obj$points$fm[it],obj$points$x[it],obj$points$y[it],col=col[3])
+    if (!is.na(edge.col[1])) rgl::segments3d(obj$points$fm[ie],obj$points$x[ie],obj$points$y[ie],col=rep(ifelse(obj$border,edge.col[1],edge.col[2]),each=2))
+    if (!is.na(vertex.col[1])) rgl::points3d(obj$points$fm[iv],obj$points$x[iv],obj$points$y[iv],col=vertex.col[1])
   }
 }
 
@@ -40,7 +39,6 @@ fracture3d = function(obj, type=c("top","bottom"), col=c(2,3,4), edge.col=NA, ve
 #' @param type the surface to plot: top, bottom, middle
 #' @param ... other arguments passed to tmesh3d
 #' 
-#' @import rgl
 #' @export
 as.mesh3d.fracture_geom = function(obj, type="top", ...) {
   if (type == "top") {
@@ -50,7 +48,7 @@ as.mesh3d.fracture_geom = function(obj, type="top", ...) {
   } else if (type == "middle") {
     P = obj$points[,c("fm","x","y")]
   } else stop("unknown type:", type)
-  tmesh3d(vertices = t(as.matrix(P)), indices = t(as.matrix(obj$triangles)),homogeneous = FALSE, ...)
+  rgl::tmesh3d(vertices = t(as.matrix(P)), indices = t(as.matrix(obj$triangles)),homogeneous = FALSE, ...)
 }
 
 

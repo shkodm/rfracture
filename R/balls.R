@@ -16,7 +16,6 @@
 #' @param delete if TRUE, allow the algorithm to delete balls during optimization
 #' @param period the periodicity of the domain
 #' 
-#' @import fields
 #' @export
 fracture.balls = function(obj,
                       K = 4000,
@@ -85,9 +84,9 @@ fracture.balls = function(obj,
         c(B$y, B$y+period, B$y, B$y+period, P$x , P$x ),
         c(B$z, B$z, B$z+period, B$z+period, P$y , P$y ))
       #print(dim(X))
-      ds = fields.rdist.near(X[1:N,], X[1:n,], delta = 2*(Rmax+margin_opt),mean.neighbor = mean.neighbor,max.points = mean.neighbor*n)
+      ds = fields::fields.rdist.near(X[1:N,], X[1:n,], delta = 2*(Rmax+margin_opt),mean.neighbor = mean.neighbor,max.points = mean.neighbor*n)
       tds = data.frame(d = ds$ra, i = ds$ind[,1], j = ds$ind[,2])
-      ds = fields.rdist.near(X[(N+1):nrow(X),], X[1:n,], delta = Rmax+margin_opt, mean.neighbor = mean.neighbor, max.points = mean.neighbor*n)
+      ds = fields::fields.rdist.near(X[(N+1):nrow(X),], X[1:n,], delta = Rmax+margin_opt, mean.neighbor = mean.neighbor, max.points = mean.neighbor*n)
       if (length(ds$ra) == 1) tds = rbind(tds, data.frame(d = ds$ra, i = ds$ind[1]+N, j = ds$ind[2]))
         else if (length(ds$ra) != 0) tds = rbind(tds, data.frame(d = ds$ra, i = ds$ind[,1]+N, j = ds$ind[,2]))
       sel = tds$i > tds$j
