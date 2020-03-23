@@ -48,7 +48,16 @@ as.mesh3d.fracture_geom = function(obj, type="top", ...) {
   } else if (type == "middle") {
     P = obj$points[,c("fm","x","y")]
   } else stop("unknown type:", type)
-  rgl::tmesh3d(vertices = t(as.matrix(P)), indices = t(as.matrix(obj$triangles)),homogeneous = FALSE, ...)
+  obj = list(
+    vb = rbind(t(as.matrix(P)),1),
+    it = t(as.matrix(obj$triangles)),
+    material = list(),
+    normals = NULL,
+    meshColor = "vertices",
+    texcoords = NULL
+  )
+  class(obj) = c("mesh3d", "shape3d")
+  obj
 }
 
 
@@ -258,7 +267,6 @@ write.stl.default = function(x,con,ascii=FALSE) {
 #' 
 #' @export
 write.stl.fracture_geom = function(x,con,ascii=FALSE, type=c("top","bottom"), ...) {
-  cat("Writing fracture...")
   meshes = lapply(type, function(type) as.mesh3d.fracture_geom(x, type, ...))
   write.stl(meshes, con, ascii)
 }
