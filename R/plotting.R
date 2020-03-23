@@ -119,3 +119,148 @@ plot.fracture_matrix = function(x, field="f1", col.palette=c("black","red","yell
   } else stop("Plot not implemented with highdimensional fractures")
 }
 
+#' Writes an stl file
+#' 
+#' @export
+write.stl = function (x, ...) UseMethod("write.stl")
+
+#' Writes a mesh3d object (or a list) to an stl file
+#' 
+#' @param x list of meshes to write
+#' @param con file connection of filename to write to
+#' @param ascii if TRUE, write in ASCII format (discouraged)
+#' 
+#' @rdname write.stl
+#' @export
+write.stl.default = function(x,con,ascii=FALSE) {
+  if (all(class(x) == "list")) {
+    meshes = x
+  } else {
+    meshes = list(x)
+  }
+  meshes = lapply(meshes,function(mesh) {
+    if ("mesh3d" %in% class(mesh)) {
+      mesh
+    } else {
+      as.mesh3d(mesh)
+    }
+  })
+  asEuclidean = function (x) {
+    if (is.matrix(x) && dim(x)[2] == 4) 
+      return(x[, 1:3]/x[, 4])
+    else if (length(x) == 4) 
+      return(c(x[1]/x[4], x[2]/x[4], x[3]/x[4]))
+    else stop("'x' is not row vectors(s)")
+  }
+  writeHeader <- function() {
+    ident <- paste(filename, " produced by RGL\n")
+    if (ascii) 
+      cat("solid ", ident, file = con)
+    else {
+      padding <- paste(rep(" ", 80), collapse = "")
+      ident <- substr(paste("binary", ident, padding), 
+                      1, 80)
+      writeChar(ident, con, nchars = 80, useBytes = TRUE, 
+                eos = NULL)
+      writeBin(0L, con, size = 4, endian = "little")
+    }
+  }
+  xprod = function(v1,v2) cbind(v1[2]*v2[3]-v2[2]*v1[3], v1[3]*v2[1]-v2[3]*v1[1], v1[1]*v2[2]-v2[1]*v1[2])
+  normalize = function(v) v/sqrt(sum(v^2))
+  triangles <- 0
+  writeTriangles <- function(vertices) {
+    if (nrow(vertices)%%3 != 0) 
+      stop("Need 3N vertices")
+    n <- nrow(vertices)/3
+    for (i in seq_len(n)) {
+      vec0 <- vertices[3 * i - 2, ]
+      vec1 <- vertices[3 * i - 1, ]
+      vec2 <- vertices[3 * i, ]
+      normal <- normalize(xprod(vec2 - vec0, vec1 - vec0))
+      if (ascii) {
+        cat("facet normal ", normal, "\n", file = con)
+        cat("outer loop\n", file = con)
+        cat("vertex ", vec0, "\n", file = con)
+        cat("vertex ", vec1, "\n", file = con)
+        cat("vertex ", vec2, "\n", file = con)
+        cat("endloop\n", file = con)
+        cat("endfacet\n", file = con)
+      }
+      else {
+        writeBin(c(normal, vec0, vec1, vec2), con, size = 4, 
+                 endian = "little")
+        writeBin(0L, con, size = 2, endian = "little")
+      }
+    }
+    triangles <<- triangles + n
+  }
+  writeQuads <- function(vertices) {
+    if (nrow(vertices)%%4 != 0) 
+      stop("Need 4N vertices")
+    n <- nrow(vertices)/4
+    indices <- rep(seq_len(n) * 4, each = 6) - rep(c(3, 2, 
+                                                     1, 3, 1, 0), n)
+    writeTriangles(vertices[indices, ])
+  }
+  writeSurface <- function(id) {
+    vertices <- rgl.attrib(id, "vertices")
+    dims <- rgl.attrib(id, "dim")
+    nx <- dims[1]
+    nz <- dims[2]
+    indices <- integer(0)
+    for (j in seq_len(nx - 1) - 1) {
+      v1 <- j + nx * (seq_len(nz) - 1) + 1
+      indices <- c(indices, rbind(v1[-nz], v1[-nz] + 1, 
+                                  v1[-1] + 1, v1[-1]))
+    }
+    writeQuads(vertices[indices, ])
+  }
+  writeMesh <- function(mesh, scale = 1, offset = c(0, 0, 0)) {
+    vertices <- asEuclidean(t(mesh$vb)) * scale
+    vertices <- vertices + rep(offset, each = nrow(vertices))
+    nt <- length(mesh$it)/3
+    nq <- length(mesh$ib)/4
+    newverts <- matrix(NA, 3 * nt + 6 * nq, 3)
+    if (nt) 
+      newverts[1:(3 * nt), ] <- vertices[c(mesh$it), ]
+    if (nq) 
+      newverts[3 * nt + 1:(6 * nq), ] <- vertices[c(mesh$ib[1:3, 
+                                                            ], mesh$ib[c(1, 3, 4), ]), ]
+    writeTriangles(newverts)
+  }
+  avgScale <- function() {
+    bbox <- par3d("bbox")
+    ranges <- c(bbox[2] - bbox[1], bbox[4] - bbox[3], bbox[6] - 
+                  bbox[5])
+    if (prod(ranges) == 0) 
+      1
+    else exp(mean(log(ranges)))
+  }
+  if (is.character(con)) {
+    con <- file(con, if (ascii) 
+      "w"
+      else "wb")
+    on.exit(close(con))
+  }
+  filename <- summary(con)$description
+  writeHeader()
+  for (mesh in meshes) writeMesh(mesh)
+  if (!ascii) {
+    seek(con, 80)
+    writeBin(as.integer(triangles), con, size = 4, endian = "little")
+  }
+  invisible(filename)
+}
+
+#' Writes a mesh3d object (or a list) to an stl file
+#' 
+#' @param x list of meshes to write
+#' @param con file connection of filename to write to
+#' @param ascii if TRUE, write in ASCII format (discouraged)
+#' 
+#' @export
+write.stl.fracture_geom = function(x,con,ascii=FALSE, type=c("top","bottom"), ...) {
+  cat("Writing fracture...")
+  meshes = lapply(type, function(type) as.mesh3d.fracture_geom(x, type, ...))
+  write.stl(meshes, con, ascii)
+}
