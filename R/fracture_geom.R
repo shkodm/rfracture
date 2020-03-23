@@ -169,43 +169,4 @@ surface_summary = function(obj, surface=c("f1","f2","h","fm")) {
   })
 }
 
-#' Extract the overlapping part of two surfaces of a fracture
-#' 
-#' @param obj the fracture_geom object
-#' @param touch what to do with the touching part (see description)
-#' @description 
-#' The possible values of touch are: "exclude" - exclude touching part, "include" - leave untouched, "only" - select only the touching part.
-#' 
-#' @export
-touching = function(obj,touch="exclude") {
-  P = obj$points
-  i = obj$triangles
-  sel = P$f1 <= P$f2
-  P$f1[sel] = P$fm[sel]
-  P$f2[sel] = P$fm[sel]
-  
-  sel = sel[i]
-  dim(sel) = dim(i)
-  sel = rowSums(sel) != 3
-  if (touch == "exclude") {
-    
-  } else if (touch == "include") {
-    sel[] = TRUE
-  } else if (touch == "only") {
-    sel = ! sel
-  } else stop("invalid value for touch")
-  i = i[sel,]
-  sel = rep(FALSE,nrow(P))
-  sel[i[,1]] = TRUE
-  sel[i[,2]] = TRUE
-  sel[i[,3]] = TRUE
-  
-  ni = rep(0,nrow(P))
-  ni[sel] = 1:sum(sel)
-  i[] = ni[i]
-  i = i[rowSums(i == 0) == 0,]
-  P = P[sel,]
-  obj$points=P
-  obj$triangles=i
-  return(obj)
-}
+
