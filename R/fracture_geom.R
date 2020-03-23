@@ -173,10 +173,19 @@ surface_summary = function(obj, surface=c("f1","f2","h","fm")) {
 #' 
 #' @param obj the fracture_geom object
 #' @param gap the new gap
+#' @param closed the probability of closed gap
 #' @param offset the offset by which the fracture should be moved vertical
 #' 
 #' @export
-set_gap = function(obj, gap=-qnorm(closed, mean=0, sd=sqrt(obj$var.diff)), closed=0.5, offset=0) {
+set_gap = function(obj, gap, closed, offset) {
+  if (missing(gap)) {
+    if (missing(closed)) {
+      gap = obj$gap
+    } else {
+      gap=-qnorm(closed, mean=0, sd=sqrt(obj$var.diff))
+    }
+  }
+  if (missing(offset)) offset = obj$offset
   dgap = gap - obj$gap
   doffset = offset - obj$offset
   obj$points$f1 = obj$points$f1 + doffset + dgap/2

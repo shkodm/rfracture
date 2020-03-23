@@ -4,17 +4,14 @@
 \alias{set_gap}
 \title{Set the gap and offset for already created fracture}
 \usage{
-set_gap(
-  obj,
-  gap = -qnorm(closed, mean = 0, sd = sqrt(obj$var.diff)),
-  closed = 0.5,
-  offset = 0
-)
+set_gap(obj, gap, closed, offset)
 }
 \arguments{
 \item{obj}{the fracture_geom object}
 
 \item{gap}{the new gap}
+
+\item{closed}{the probability of closed gap}
 
 \item{offset}{the offset by which the fracture should be moved vertical}
 }
