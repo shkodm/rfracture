@@ -177,6 +177,7 @@ fracture_matrix = function(
     power.spectrum = power.spectrum,
     corr.profile = corr.profile,
     gap = gap,
+    offset = 0,
     prob.closed = pnorm(-gap,0,sd=sqrt(var.diff)),
     length_one = length_one,
     gauss.order = gauss.order,
