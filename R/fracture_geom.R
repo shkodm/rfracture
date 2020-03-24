@@ -192,5 +192,7 @@ set_gap = function(obj, gap, closed, offset) {
   obj$points$f2 = obj$points$f2 + doffset - dgap/2
   obj$points$fm = obj$points$fm + doffset
   obj$points$h = obj$points$h + dgap
+  obj$gap = gap
+  obj$offset = offset
   obj
 }

@@ -106,6 +106,12 @@ slice = function(obj, by="h", flatten="edge", value="all", cut.triangles=TRUE, c
   if (by == "h") {
     obj$points[flat,"f1"] = obj$points[flat,"fm"] + level/2
     obj$points[flat,"f2"] = obj$points[flat,"fm"] - level/2
+  } else if (by == "f1") {
+    obj$points[flat,"h"]  =  level - obj$points[flat,"f2"]
+    obj$points[flat,"fm"] = (level + obj$points[flat,"f2"])/2
+  } else if (by == "f2") {
+    obj$points[flat,"h"]  =  obj$points[flat,"f1"] - level
+    obj$points[flat,"fm"] = (obj$points[flat,"f1"] + level)/2
   }
   tr_id = matrix(id[seq_len(nrow(tr)*2)],ncol=2,nrow=nrow(tr))
   tr_id_degen = matrix(id_degen[seq_len(nrow(tr)*2)],ncol=2,nrow=nrow(tr))
