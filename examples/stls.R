@@ -1,4 +1,4 @@
-
+library(rfracture)
 
 alpha = 4.5
 power.iso = function(f) 0.000001*ifelse(f<5,0,(f/5)^-alpha)
