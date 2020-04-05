@@ -95,7 +95,8 @@ fracture_matrix = function(
     power.iso,
     power.spectrum = function(f) power.iso(sqrt(rowSums(f*f))),
     corr.profile = function(k) 0,
-    closed = 0.1, gap, seed, length_one = FALSE, gauss.order = 1) {
+    closed = 0.1, gap, seed, corr.method = c("midline","top","mixed"), length_one = FALSE, gauss.order = 1) {
+  corr.method = match.arg(corr.method)
   n = length(dims)
   p_ = expand_seq(dims,seq_1)
   p = p_ %*% span
@@ -137,10 +138,27 @@ fracture_matrix = function(
   rad = sqrt(power)
   corr.prof = corr.profile(wavelength)
   if (any(abs(corr.prof) > 1)) stop("Correlation outside of [-1,1] interval")
-  corr.angle = atan(corr.prof)
-
-  corr.coef = list((cos(corr.angle) * coef[,1] + sin(corr.angle) * coef[,2]) * rad,
-    (sin(corr.angle) * coef[,1] + cos(corr.angle) * coef[,2]) * rad)
+  if (corr.method == "midline") { # midline always the same
+    # ang = acos(corr)/2
+    # M = matrix(c(cos(ang),sin(ang),cos(ang),-sin(ang)),2,2)
+    corr.angle = acos(corr.prof)/2
+    corr.coef = list((cos(corr.angle) * coef[,1] + sin(corr.angle) * coef[,2]) * rad,
+                     (cos(corr.angle) * coef[,1] - sin(corr.angle) * coef[,2]) * rad)
+  } else if (corr.method == "mixed") { # nice mix of two random variables
+    # ang = asin(corr)/2
+    # M = matrix(c(cos(ang),sin(ang),sin(ang),cos(ang)),2,2)
+    corr.angle = asin(corr.prof)/2
+    corr.coef = list((cos(corr.angle) * coef[,1] + sin(corr.angle) * coef[,2]) * rad,
+                     (sin(corr.angle) * coef[,1] + cos(corr.angle) * coef[,2]) * rad)
+  } else if (corr.method == "top") { # top surface always the same
+    # ang = asin(corr)
+    # M = matrix(c(1,0,sin(ang),cos(ang)),2,2)
+    corr.angle = asin(corr.prof)
+    corr.coef = list((coef[,1]) * rad,
+                     (sin(corr.angle) * coef[,1] + cos(corr.angle) * coef[,2]) * rad)
+  } else {
+    stop("unknown corr.method")
+  }
 
   fields = lapply(corr.coef, function(x) {
     dim(x) = dims
@@ -149,11 +167,13 @@ fracture_matrix = function(
   
   ret = list()
   c1 = sum((power)[sel])
-  c2 = sum((power * (2*sin(corr.angle)*cos(corr.angle)))[sel])
+  c2 = sum((power * corr.prof)[sel])
   cov.theoretical = matrix(c(c1,c2,c2,c1),2,2)
   cov.final = cov(cbind(as.vector(fields[[1]]),as.vector(fields[[2]])))
-  var.midline = sum(((cos(corr.angle) + sin(corr.angle))^2*power)[sel])/2
-  var.diff = sum(((cos(corr.angle) - sin(corr.angle))^2*power)[sel])*2
+  # E(((f1+f2)/2)^2) = E(f1^2 + f2^2 + 2*f1*f2)/4
+  var.midline = (c1+c2)/2
+  # E((f1-f2)^2) = E(f1^2 + f2^2 - 2*f1*f2)
+  var.diff = (c1-c2)*2
   var.prime = sum((power*(2*pi*freq)^2)[sel])
   if (missing(gap)) {
     if (!missing(closed)) {

@@ -14,6 +14,7 @@ fracture_matrix(
   closed = 0.1,
   gap,
   seed,
+  corr.method = c("midline", "top", "mixed"),
   length_one = FALSE,
   gauss.order = 1
 )
