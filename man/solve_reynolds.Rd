@@ -4,7 +4,11 @@
 \alias{solve_reynolds}
 \title{Calculated the premability tensor by solving a Reynolds lubrication equation in the fracture}
 \usage{
-solve_reynolds(obj, q.fun = function(h) h^3/12)
+solve_reynolds(
+  obj,
+  q.fun = function(h) h^3/12,
+  method = c("direct", "iterative")
+)
 }
 \arguments{
 \item{obj}{the fracture_geom object}

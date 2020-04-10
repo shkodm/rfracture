@@ -89,7 +89,7 @@ mar = 1/G/32 * 0.6
 refine = 32
 gap_n = 16
 ret = fracture_geom(refine=refine, corr.profile = corr.profile, power.iso = power.iso, seed=123)
-ret$points$f1 =  -cos((ret$points$x)*2*pi)*cos((ret$points$y)*2*pi)*0.025
+ret$points$f1 =  -cos((ret$points$x)*2*pi)*0.025
 ret$points$f2 = -ret$points$f1
 ret$points$fm = (ret$points$f1 + ret$points$f2)/2
 ret$points$h  =  ret$points$f1 - ret$points$f2
