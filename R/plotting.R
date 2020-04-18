@@ -138,6 +138,7 @@ write.stl = function (x, ...) UseMethod("write.stl")
 #' @param ascii if TRUE, write in ASCII format (discouraged)
 #' 
 #' @rdname write.stl
+#' @importFrom rgl as.mesh3d
 #' @export
 write.stl.default = function(x,con,ascii=FALSE) {
   if (all(class(x) == "list")) {
@@ -149,7 +150,7 @@ write.stl.default = function(x,con,ascii=FALSE) {
     if ("mesh3d" %in% class(mesh)) {
       mesh
     } else {
-      as.mesh3d(mesh)
+      rgl::as.mesh3d(mesh)
     }
   })
   asEuclidean = function (x) {
@@ -265,8 +266,9 @@ write.stl.default = function(x,con,ascii=FALSE) {
 #' @param con file connection of filename to write to
 #' @param ascii if TRUE, write in ASCII format (discouraged)
 #' 
+#' @importFrom rgl as.mesh3d
 #' @export
 write.stl.fracture_geom = function(x,con,ascii=FALSE, type=c("top","bottom"), ...) {
-  meshes = lapply(type, function(type) as.mesh3d.fracture_geom(x, type, ...))
+  meshes = lapply(type, function(type) rgl::as.mesh3d.fracture_geom(x, type, ...))
   write.stl(meshes, con, ascii)
 }
