@@ -3,7 +3,7 @@
 #' @param q.fun the dependence of the flux on the heights, by default h^3/12
 #' @importFrom Matrix sparseMatrix solve t 
 #' @export
-solve_reynolds = function(obj, q.fun=function(h) h^3/12, method=c("direct","iterative")) {
+solve_reynolds = function(obj, q.fun=function(h) h^3/12, method=c("direct","iterative","system")) {
   method = match.arg(method)
   p  = cbind(obj$points$x, obj$points$y)
   p1 = p[obj$triangles[,1],]
@@ -68,7 +68,10 @@ solve_reynolds = function(obj, q.fun=function(h) h^3/12, method=c("direct","iter
 
   #The hard part
   if (method == "direct") {
-    X = try(solve(BM, RHS))
+    X = try(cbind(
+      solve(BM, RHS[,1]),
+      solve(BM, RHS[,2])
+    ))
     if (inherits(X, "try-error")) {
       errors = "Solve failed"
       perm_diff = matrix(NA,2,2)
@@ -83,6 +86,8 @@ solve_reynolds = function(obj, q.fun=function(h) h^3/12, method=c("direct","iter
     iter = ret$iter
     errors = ret$errors
     perm_diff = -as.matrix(t(X) %*% RHS)
+  } else if (method == "system") {
+    return (list(matrix= BM, rhs=RHS))
   }
   
   VOL = sum((h1+h2+h3)/3*a)
@@ -103,3 +108,35 @@ solve_reynolds = function(obj, q.fun=function(h) h^3/12, method=c("direct","iter
     errors = errors
   ) 
 }
+
+#' Simple Conjugate Gradient implementation
+#' 
+#' @param A Matrix
+#' @param b Right-hand-side
+#' @param itmax Maximum number of iterations
+#' @param epsjump The level of residual drop needed
+#' @param eps Absolute level of residual needed, by default equal to epsjump times initial residual
+#' @param x0 Initial guess on solution
+#' 
+#' @export
+solve_cg = function(A, b, itmax = 800, epsjump=1e-6, eps, x0 = rep(0, ncol(A))) {
+  x = x0
+  r = b - A %*% x
+  q = r
+  r2 = sum(r^2)
+  res = r2
+  if (missing(eps)) eps = epsjump * r2
+  for (i in 1:itmax) {
+    r2 = sum(r^2)
+    res = c(res, r2)
+    if (r2 < eps) break
+    Aq = A %*% q
+    alpha = sum(r * q)/sum(q * Aq)
+    x = x + alpha*q
+    r = r - alpha*Aq
+    beta = sum(r * Aq)/sum(q * Aq)
+    q = r - beta * q
+  }
+  list(x=x, iterations=i, residual=r2, eps=eps, res=res)
+}
+

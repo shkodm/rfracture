@@ -7,7 +7,7 @@
 solve_reynolds(
   obj,
   q.fun = function(h) h^3/12,
-  method = c("direct", "iterative")
+  method = c("direct", "iterative", "system")
 )
 }
 \arguments{
