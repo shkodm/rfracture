@@ -9,6 +9,7 @@
 #' 
 #' @export
 estimate_wishart = function(res, dof, ...) {
+  p = 2
   if (missing(dof)) dof = 10
   lGamma_2 = function(n) log(pi)/2 + lgamma(n) + lgamma(n-1/2)
   lam = t(sapply(res, function(x) eigen(x)$value))
@@ -33,6 +34,7 @@ estimate_wishart = function(res, dof, ...) {
 #' 
 #' @export
 estimate_wishart_mean = function(res, dof, mean, ...) {
+  p = 2
   if (missing(dof)) dof = 10
   if (missing(mean)) mean = 0
   lGamma_2 = function(n) log(pi)/2 + lgamma(n) + lgamma(n-1/2)
