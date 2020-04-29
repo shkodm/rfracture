@@ -1,9 +1,10 @@
 library(Matrix)
 
 N = 5000
-cost = c(1,2,3)
+cost = c(1,2,4)
 #cost = c(1,1,1)
 set.seed(123)
+seeds = sample.int(.Machine$integer.max,size = N, replace = TRUE)
 Ytable = matrix(rnorm(N*3),N,3,byrow = TRUE)
 Ymat = matrix(c(1/3,1/13,1,1,0,1/10,1,1.5,0,0,1,2),4,3)
 #Ymat = matrix(c(1,0,0,1,0,1,0,1.5,0,0,1,2),4,3)
@@ -21,11 +22,35 @@ x = expand.grid(lev = levs,seed = 1:20)
 
 fun = function(seed,lev) Ytable[seed+nrow(Ytable)*(as.integer(lev)-1)]
 
-x$val = fun(x$seed,x$lev)
 
-x = x[seq_len(nrow(x)-1),]
-
-x_tab = reshape2::dcast(x, seed~lev, value.var = "val")
+times = rep(0,nlevs)
+evals = rep(0,nlevs)
+#fun2 = function(seed,lev) Ytable[seed+nrow(Ytable)*(as.integer(lev)-1)]
+fun2 = function(seed,lev) {
+  #lev = c(2,1,3)[lev2]
+  library(rfracture)
+  alpha = 4.5
+  sd = 0.001
+  power.iso = function(f) sd^2*ifelse(f<5,1,(f/5)^-alpha)
+  corr.profile = function(lambda) 0
+  G = 12
+  gap = 1/(2*G)
+  refine = 2^(as.integer(lev)+1)
+  ret = fracture_geom(refine=refine, corr.profile = corr.profile, power.iso = power.iso, seed=seed)
+  ret2 = set_gap(ret, gap = gap)
+  ret2 = slice(ret2,  value="above")
+  ret2 = cut(ret2)
+  res = solve_reynolds(ret2, method = "direct")
+  res$perm[1,1]/res$perm_gap
+}
+fun = function(seed,lev) {
+  lev = as.integer(lev)
+  tm = system.time({ret = fun2(seeds[seed],lev)})
+  times[lev] <<- times[lev] + tm[1]
+  evals[lev] <<- evals[lev] + 1
+  cost <<- times/evals
+  ret
+}
 
 sparseZero = function(n,m) sparseMatrix(i=integer(0),j=integer(0),x=numeric(0),dims=c(n,m))
 
@@ -82,6 +107,9 @@ p_to_K = function(p) {
 }
 
 
+x$val = sapply(seq_len(nrow(x)),function(i) fun(x$seed[i],x$lev[i]))
+
+
 Z = sparseZero(3,3)
 p = c(1,0,0,1,0,1)
 
@@ -90,27 +118,22 @@ log = NULL
 for (ad in seq_len(2000)) {
   x = x[order(x$seed,x$lev),]
   
-  # x_tab = reshape2::dcast(x, seed~lev, value.var = "val")
-  # X = as.matrix(x_tab[,seq_len(nlevs)+1])
-  # X = apply(X,2,function(x) x - mean(x,na.rm=TRUE))
-  # ret = optim(p,function(p) -loglik_na(p_to_K(p),X))
-  # p = ret$par
-  # K = p_to_K(p)
-  K = realK
+  x_tab = reshape2::dcast(x, seed~lev, value.var = "val")
+  X = as.matrix(x_tab[,seq_len(nlevs)+1])
+  X = apply(X,2,function(x) x - mean(x,na.rm=TRUE))
+  ret = optim(p,function(p) -loglik_na(p_to_K(p),X))
+  p = ret$par
+  K = p_to_K(p)
+#  K = realK
   
   xH = MyH(x)
   xS = MyCov(x,x)
   xM = rbind(cbind(xS,xH),cbind(t(xH),Z))
   MY = solve(xM,c(x$val,rep(0,nlevs)))
   mu = MY[nrow(x)+1:3]
-  xe = expand.grid(seed = unique(x$seed), lev = levs)
-  xe$val = cbind(MyCov(xe,x),MyH(xe)) %*% MY
-  
-  xe_tab = reshape2::dcast(xe, seed~lev, value.var = "val")
-  K_ = cov(xe_tab[,seq_len(nlevs)+1])
-  r = sqrt(sum((K-K_)^2))
-  #print(r)
 
+  x_tab = reshape2::dcast(x, seed~lev, value.var = "val")
+  
 h = rep(0,nrow(x)+3)
 h[nrow(x)+3] = 1
 
@@ -140,8 +163,8 @@ vardifpercost = vardif / cost[nx$lev]
 log = rbind(log,c(sum(cost[x$lev]),var,var2,vardif,vardifpercost, mu))
 #print(vardif)
 
-#sel = which.max(vardifpercost)
-sel = sample(seq_along(vardifpercost),size = 1, prob = vardifpercost)
+sel = which.max(vardifpercost)
+#sel = sample(seq_along(vardifpercost),size = 1, prob = vardifpercost)
 
 add_x = nx[sel,]
 add_x$val = fun(add_x$seed,add_x$lev)
@@ -149,13 +172,18 @@ print(add_x)
 x = rbind(x,add_x)
 if (nrow(log) %% 10 == 0) {
   par(mfrow=c(2,2))
-  matplot(log[,1],log[,1:6+8],log="y",type="l",col=rep(1:3,times=2),lty=rep(1:2,each=3))
+  matplot(log[,1],log[,1:6+9],log="y",type="l",col=rep(1:3,times=2),lty=rep(1:2,each=3))
 #  plot(-log[,2],log="xy")
 #  abline(0,-1)
   #plot(log[,1],log[,17]); abline(h=2)
   #lines(log[,1],2 + sqrt(-log[,2]),lty=2)
   #lines(log[,1],2 - sqrt(-log[,2]),lty=2)
-  matplot(log[,1],log[,2:3],log="y",type="l",lty=1)
+  fin = log[nrow(log),17]
+  plot(log[,1],log[,17],type="l"); abline(h=fin)
+  lines(log[,1],fin + sqrt(log[,2]),lty=2)
+  lines(log[,1],fin - sqrt(log[,2]),lty=2)
+  plot(log[,1],log[,2],log="xy",type="l",lty=1)
+  #lines(log2[,1],log2[,2],col=8)
   lines(seq_len(nrow(log))*cost[3],realK[3,3]/seq_len(nrow(log)),lty=2,col=2)
   lines(seq_len(nrow(log))*cost[3],K[3,3]/seq_len(nrow(log)),lty=2,col=1)
   barplot(table(x$lev))
