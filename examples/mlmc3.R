@@ -16,7 +16,7 @@ realK = t(Ymat) %*% diag(c(1,1,1,0)) %*% Ymat
 #realK = diag(3)
 #rgl::plot3d(Ytable)
 
-levs = factor(paste0("lev",1:3))
+levs = factor(paste0("lev",1:4))
 nlevs = nlevels(levs)
 x = expand.grid(lev = levs,seed = 1:20)
 
@@ -35,7 +35,8 @@ fun2 = function(seed,lev) {
   corr.profile = function(lambda) 0
   G = 12
   gap = 1/(2*G)
-  refine = 2^(as.integer(lev)+1)
+  refine = 2^(as.integer(lev))
+  #refine = round(2^seq(2,4,len=4))[as.integer(lev)]
   ret = fracture_geom(refine=refine, corr.profile = corr.profile, power.iso = power.iso, seed=seed)
   ret2 = set_gap(ret, gap = gap)
   ret2 = slice(ret2,  value="above")
@@ -86,7 +87,7 @@ loglik = function(SK, SX) {
 }
 
 TF = c(TRUE,FALSE)
-TF = as.matrix(expand.grid(TF,TF,TF))
+TF = as.matrix(do.call(expand.grid,lapply(seq_len(nlevs),function(i) TF)))
 TF = lapply(seq_len(nrow(TF)),function(i)as.vector(TF[i,]))
 
 loglik_na = function(K,X) {
@@ -102,28 +103,37 @@ loglik_na = function(K,X) {
 }
 
 p_to_K = function(p) {
-  mt = matrix(c(p[1],p[2],p[3],0,p[4],p[5],0,0,p[6]),3,3)
+  mt = matrix(0,nlevs,nlevs)
+  mt[row(mt) >= col(mt)] = p
   mt %*% t(mt)
 }
 
 
 x$val = sapply(seq_len(nrow(x)),function(i) fun(x$seed[i],x$lev[i]))
+x0 = x
 
 
-Z = sparseZero(3,3)
-p = c(1,0,0,1,0,1)
+
+
+
+Z = sparseZero(nlevs,nlevs)
 
 K = diag(nrow=nlevs)
+p = K[row(K) >= col(K)]
 log = NULL
-for (ad in seq_len(2000)) {
-  x = x[order(x$seed,x$lev),]
+for (ad in seq_len(4000)) {
+  #x = x[order(x$seed,x$lev),]
   
-  x_tab = reshape2::dcast(x, seed~lev, value.var = "val")
-  X = as.matrix(x_tab[,seq_len(nlevs)+1])
-  X = apply(X,2,function(x) x - mean(x,na.rm=TRUE))
-  ret = optim(p,function(p) -loglik_na(p_to_K(p),X))
-  p = ret$par
-  K = p_to_K(p)
+  #if (round(log2(ad),digits = 7) == log2(ad)) {
+  if (nrow(x) %% 100 == 0) {
+    x_tab = reshape2::dcast(x, seed~lev, value.var = "val")
+    X = as.matrix(x_tab[,seq_len(nlevs)+1])
+    X = apply(X,2,function(x) x - mean(x,na.rm=TRUE))
+    ret = optim(p,function(p) -loglik_na(p_to_K(p),X),method="L-BFGS-B")
+    p = ret$par
+    K = p_to_K(p)
+    print(K)
+  }
 #  K = realK
   
   xH = MyH(x)
@@ -131,19 +141,27 @@ for (ad in seq_len(2000)) {
   xM = rbind(cbind(xS,xH),cbind(t(xH),Z))
   MY = solve(xM,c(x$val,rep(0,nlevs)))
   mu = MY[nrow(x)+1:3]
-
+  mlmc_mu = mean((x_tab[,2])[!is.na(x_tab[,2]) & is.na(x_tab[,3]) & is.na(x_tab[,4])]) +
+    mean((x_tab[,3]-x_tab[,2])[!is.na(x_tab[,2]) & !is.na(x_tab[,3]) & is.na(x_tab[,4])]) +
+    mean((x_tab[,4]-x_tab[,3])[!is.na(x_tab[,3]) & !is.na(x_tab[,4])])
+  tmp_fun = function(x) var(x)/length(x)
+  mlmc_var = tmp_fun((x_tab[,2])[!is.na(x_tab[,2]) & is.na(x_tab[,3]) & is.na(x_tab[,4])]) +
+    tmp_fun((x_tab[,3]-x_tab[,2])[!is.na(x_tab[,2]) & !is.na(x_tab[,3]) & is.na(x_tab[,4])]) +
+    tmp_fun((x_tab[,4]-x_tab[,3])[!is.na(x_tab[,3]) & !is.na(x_tab[,4])])
   x_tab = reshape2::dcast(x, seed~lev, value.var = "val")
   
-h = rep(0,nrow(x)+3)
-h[nrow(x)+3] = 1
+h = rep(0,nrow(x)+nlevs)
+h[nrow(x)+nlevs] = 1
 
-nx = expand.grid(seed = max(x$seed)+1, lev = levs)
+x_tab = reshape2::dcast(x, seed~lev, value.var = "val")
+x_na = is.na(x_tab[,1:nlevs+1])
+x_na = rbind(x_na,TRUE)
+rownames(x_na) = c(x_tab$seed,max(x_tab$seed)+1)
 
-lev_seed = sapply(levs, function(l) max(x$seed[x$lev == l])) + 1
-nx = rbind(
-  expand.grid(seed = max(x$seed) + 1, lev=levs),
-  data.frame(seed = sapply(levs, function(l) max(x$seed[x$lev == l]))+1, lev = levs)
-)
+a = do.call(rbind,lapply(seq_len(nlevs), function(i) cbind(x_na,i)[x_na[,i],,drop=FALSE]))
+a = unique(a)
+nx = data.frame(seed=as.integer(rownames(a)),lev = levs[a[,nlevs+1]])
+
 #nx = unique(nx)
 
 nS = MyCov(x,nx)
@@ -160,10 +178,11 @@ var2 = as.vector(wei %*% MyCov(x,x,realK) %*% wei)
 vardif = as.vector((h %*% g)^2 / (c - colSums(g*b)))
 
 vardifpercost = vardif / cost[nx$lev]
-log = rbind(log,c(sum(cost[x$lev]),var,var2,vardif,vardifpercost, mu))
+log = rbind(log,c(sum(cost[x$lev]),var,mlmc_var,mu,mlmc_mu,K[3,3],var(x$val[x$lev=="lev3"])))
 #print(vardif)
 
 sel = which.max(vardifpercost)
+#print(a[sel,drop=FALSE])
 #sel = sample(seq_along(vardifpercost),size = 1, prob = vardifpercost)
 
 add_x = nx[sel,]
@@ -172,28 +191,41 @@ print(add_x)
 x = rbind(x,add_x)
 if (nrow(log) %% 10 == 0) {
   par(mfrow=c(2,2))
-  matplot(log[,1],log[,1:6+9],log="y",type="l",col=rep(1:3,times=2),lty=rep(1:2,each=3))
+#  matplot(log[,1],log[,1:6+9],log="y",type="l",col=rep(1:3,times=2),lty=rep(1:2,each=3))
 #  plot(-log[,2],log="xy")
 #  abline(0,-1)
   #plot(log[,1],log[,17]); abline(h=2)
   #lines(log[,1],2 + sqrt(-log[,2]),lty=2)
   #lines(log[,1],2 - sqrt(-log[,2]),lty=2)
-  fin = log[nrow(log),17]
-  plot(log[,1],log[,17],type="l"); abline(h=fin)
+  fin = log[nrow(log),6]
+  matplot(log[,1],log[,6:7],type="l",ylim=quantile(log[,6:7],probs = c(0.01,0.99),na.rm = TRUE),lty=1)
+  abline(h=fin)
   lines(log[,1],fin + sqrt(log[,2]),lty=2)
   lines(log[,1],fin - sqrt(log[,2]),lty=2)
-  plot(log[,1],log[,2],log="xy",type="l",lty=1)
+  lines(log[,1],fin + sqrt(log[,3]),lty=2,col=2)
+  lines(log[,1],fin - sqrt(log[,3]),lty=2,col=2)
+  
+  matplot(log[,1],log[,8:9],type="l",ylim=quantile(log[,8:9],probs = c(0.1,0.9)),lty=1)
+  
+  ltop = K[nlevs,nlevs]/min(log[,1])*cost[nlevs]
+  llow = min(log[,2:3],ltop,na.rm = TRUE)
+  matplot(log[,1],log[,2:3],log="xy",type="l",lty=1,ylim=c(llow,ltop),xlim=c(min(log[,1]),cost[nlevs]*K[nlevs,nlevs]/llow))
   #lines(log2[,1],log2[,2],col=8)
-  lines(seq_len(nrow(log))*cost[3],realK[3,3]/seq_len(nrow(log)),lty=2,col=2)
-  lines(seq_len(nrow(log))*cost[3],K[3,3]/seq_len(nrow(log)),lty=2,col=1)
-  barplot(table(x$lev))
+  #lines(seq_len(nrow(log))*cost[3],realK[3,3]/seq_len(nrow(log)),lty=2,col=2)
+  #lines(seq_len(nrow(log))*cost[3],K[3,3]/seq_len(nrow(log)),lty=2,col=1)
+  for (i in seq_len(nlevs)) abline(log10(K[i,i]*cost[i]),-1,lty=ifelse(i == nlevs,2,3))
+  #abline(log10(K[3,3]*cost[3]),-1,lty=2)
+  #abline(log10(K[2,2]*cost[2]),-1,lty=3)
+  #abline(log10(K[1,1]*cost[1]),-1,lty=3)
+  wy = table(x$lev)
+  wx = barplot(wy)
+  text(wx,wy,wy, adj=c(0.5,-0.3) )
 }
 }
+
 
 
 #plot(-log[,2],log="xy")
 #abline(0,-1)
 
-
-#x_tab = reshape2::dcast(x, seed~lev, value.var = "val")
 
