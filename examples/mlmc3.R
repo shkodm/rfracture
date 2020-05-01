@@ -1,25 +1,17 @@
 library(Matrix)
+library(future)
 
+plan(multisession)
+
+levs = factor(paste0("lev",1:4))
 target = 4
 N = 5000
 cost = c(1,2,4)
 #cost = c(1,1,1)
 set.seed(123)
 seeds = sample.int(.Machine$integer.max,size = N, replace = TRUE)
-Ytable = matrix(rnorm(N*3),N,3,byrow = TRUE)
-Ymat = matrix(c(1/3,1/13,1,1,0,1/10,1,1.5,0,0,1,2),4,3)
-#Ymat = matrix(c(1,0,0,1,0,1,0,1.5,0,0,1,2),4,3)
-Ytable = cbind(Ytable,1) %*% Ymat
-Ytable = cbind(Ytable,1) %*% matrix(c(1,0,0,1,0,1,0,1.5,0,0,1,2),4,3)
 
-realK = t(Ymat) %*% diag(c(1,1,1,0)) %*% Ymat
-
-#realK = diag(3)
-#rgl::plot3d(Ytable)
-
-levs = factor(paste0("lev",1:4))
 nlevs = nlevels(levs)
-x = expand.grid(lev = levs,seed = 1:6)
 
 fun = function(seed,lev) Ytable[seed+nrow(Ytable)*(as.integer(lev)-1)]
 
@@ -27,31 +19,28 @@ fun = function(seed,lev) Ytable[seed+nrow(Ytable)*(as.integer(lev)-1)]
 times = rep(0,nlevs)
 evals = rep(0,nlevs)
 #fun2 = function(seed,lev) Ytable[seed+nrow(Ytable)*(as.integer(lev)-1)]
-fun2 = function(seed,lev) {
-  #lev = c(2,1,3)[lev2]
-  library(rfracture)
-  alpha = 4.5
-  sd = 0.001
-  power.iso = function(f) sd^2*ifelse(f<5,1,(f/5)^-alpha)
-  corr.profile = function(lambda) 0
-  G = 12
-  gap = 1/(2*G)
-  refine = 2^(as.integer(lev)+1)
-  #refine = round(2^seq(2,4,len=4))[as.integer(lev)]
-  ret = fracture_geom(refine=refine, corr.profile = corr.profile, power.iso = power.iso, seed=seed)
-  ret2 = set_gap(ret, gap = gap)
-  ret2 = slice(ret2,  value="above")
-  ret2 = cut(ret2)
-  res = solve_reynolds(ret2, method = "direct")
-  res$perm[1,1]/res$perm_gap
-}
 fun = function(seed,lev) {
+  fun2 = function(seed,lev) {
+    #lev = c(2,1,3)[lev2]
+    library(rfracture)
+    alpha = 4.5
+    sd = 0.001
+    power.iso = function(f) sd^2*ifelse(f<5,1,(f/5)^-alpha)
+    corr.profile = function(lambda) 0
+    G = 12
+    gap = 1/(2*G)
+    refine = 2^(as.integer(lev)+1)
+    #refine = round(2^seq(2,4,len=4))[as.integer(lev)]
+    ret = fracture_geom(refine=refine, corr.profile = corr.profile, power.iso = power.iso, seed=seed)
+    ret2 = set_gap(ret, gap = gap)
+    ret2 = slice(ret2,  value="above")
+    ret2 = cut(ret2)
+    res = solve_reynolds(ret2, method = "direct")
+    res$perm[1,1]/res$perm_gap
+  }
   lev = as.integer(lev)
-  tm = system.time({ret = fun2(seeds[seed],lev)})
-  times[lev] <<- times[lev] + tm[1]
-  evals[lev] <<- evals[lev] + 1
-  cost <<- times/evals
-  ret
+  tm = system.time({ret = fun2(seed,lev); gc();})
+  list(time=as.numeric(tm[1]), value=ret)
 }
 
 sparseZero = function(n,m) sparseMatrix(i=integer(0),j=integer(0),x=numeric(0),dims=c(n,m))
@@ -90,6 +79,7 @@ loglik = function(SK, SX) {
 TF = c(TRUE,FALSE)
 TF = as.matrix(do.call(expand.grid,lapply(seq_len(nlevs),function(i) TF)))
 TF = lapply(seq_len(nrow(TF)),function(i)as.vector(TF[i,]))
+TF = TF[sapply(TF, any)]
 
 loglik_na = function(K,X) {
   sum(sapply(TF, function(sel) {
@@ -110,25 +100,51 @@ p_to_K = function(p) {
 }
 
 
-x$val = sapply(seq_len(nrow(x)),function(i) fun(x$seed[i],x$lev[i]))
-x0 = x
+x = expand.grid(lev = levs,seed = 1:6)
+x$val = NA
 
-
-
-
+fut = NULL
 
 Z = sparseZero(nlevs,nlevs)
 
 K = diag(nrow=nlevs)
 p = K[row(K) >= col(K)]
 log = NULL
-plot_time = 0
-K_time = 0
+plot_time = Sys.time()
+K_time = Sys.time()
+K_n = 0
 for (ad in seq_len(4000)) {
   #x = x[order(x$seed,x$lev),]
+
+  to_calc = setdiff(which(is.na(x$val)),sapply(fut, function(x) x$index))
+  if (length(to_calc) >= 1) {
+    cat("Adding",length(to_calc),"futures to run...\n")
+    fut = c(
+      lapply(to_calc,function(i) list(index=i, value=future(fun(seeds[x$seed[i]],x$lev[i])))),
+      fut
+    )
+  }
   
   #if (round(log2(ad),digits = 7) == log2(ad)) {
-  if (difftime(Sys.time(), K_time, units = "sec") > 5) {
+#  if (difftime(Sys.time(), K_time, units = "sec") > 5) {
+  sel = sapply(fut, function(x) resolved(x$value))
+  if (length(sel) == 0) sel=logical()
+  if (K_n == 0) sel = rep(TRUE, length(fut))
+  if (sum(sel) > 0) {
+    cat("Evaluating",sum(sel),"futures...\n")
+    for (f in fut[sel]) {
+      idx = f$index
+      lev = x$lev[idx]
+      val = value(f$value)
+      x$val[idx] = val$value
+      times[lev] = times[lev] + val$time
+      evals[lev] = evals[lev] + 1
+    }
+    fut = fut[!sel]
+    cost = times/evals
+  }
+  
+  if (sum(!is.na(x$val)) - K_n >= 20) {
     x_tab = reshape2::dcast(x, seed~lev, value.var = "val")
     X = as.matrix(x_tab[,seq_len(nlevs)+1])
     X = apply(X,2,function(x) x - mean(x,na.rm=TRUE))
@@ -137,6 +153,7 @@ for (ad in seq_len(4000)) {
     K = p_to_K(p)
     print(K)
     K_time = Sys.time()
+    K_n = sum(!is.na(x$val))
   }
 #  K = realK
   
@@ -146,11 +163,10 @@ for (ad in seq_len(4000)) {
   MY = solve(xM,c(x$val,rep(0,nlevs)))
   mu = MY[nrow(x)+seq_len(nlevs)]
 
-  x_tab = reshape2::dcast(x, seed~lev, value.var = "val")
-  
   h = rep(0,nrow(x)+target)
   h[nrow(x)+nlevs] = 1
-  x_tab = reshape2::dcast(x, seed~lev, value.var = "val")
+
+  x_tab = reshape2::dcast(x, seed~lev, value.var = "seed")
   x_na = is.na(x_tab[,1:nlevs+1])
   x_na = rbind(x_na,TRUE)
   rownames(x_na) = c(x_tab$seed,max(x_tab$seed)+1)
@@ -175,30 +191,33 @@ for (ad in seq_len(4000)) {
     var,              # var of result
     mu[target],       # mu
     K[target,target], # variance
-    var(x$val[x$lev==levs[target]]) # variance from fine grid
+    var(x$val[x$lev==levs[target]]), # variance from fine grid
+    tapply(vardifpercost,nx$lev,max)
   ))
 
-  sel = which.max(vardifpercost)
+  #sel = which.max(vardifpercost)
   #print(a[sel,drop=FALSE])
-  #sel = sample(seq_along(vardifpercost),size = 1, prob = vardifpercost)
+  sel = sample(seq_along(vardifpercost),size = 1, prob = vardifpercost)
   
   add_x = nx[sel,]
-  add_x$val = fun(add_x$seed,add_x$lev)
+  #add_x$val = fun(add_x$seed,add_x$lev)$value
+  add_x$val = NA
   print(add_x)
   x = rbind(x,add_x)
   if (difftime(Sys.time(), plot_time, units = "sec") > 3) {
     plot_time = Sys.time()
     par(mfrow=c(2,2))
     fin = log[nrow(log),3]
-    plot(log[,1],log[,3],type="l",ylim=quantile(log[,3],probs = c(0.01,0.99),na.rm = TRUE),lty=1)
+    plot(log[,1],log[,3],type="p",ylim=quantile(log[,3],probs = c(0.01,0.99),na.rm = TRUE),lty=1)
     abline(h=fin)
     lines(log[,1],fin + sqrt(log[,2]),lty=2)
     lines(log[,1],fin - sqrt(log[,2]),lty=2)
     lines(log[,1],fin + sqrt(log[,3]),lty=2,col=2)
     lines(log[,1],fin - sqrt(log[,3]),lty=2,col=2)
     
-    matplot(log[,1],log[,4:5,drop=FALSE],type="l",ylim=quantile(log[,4:5],probs = c(0.1,0.9)),lty=1)
-    
+    #matplot(log[,1],log[,4:5,drop=FALSE],type="p",ylim=quantile(log[,4:5],probs = c(0.1,0.9),na.rm = TRUE),lty=1)
+    #matplot(log[,1:nlevs+5],log="y",type="l",lty=1)
+    matplot(log[,1:nlevs+5]/rowSums(log[,1:nlevs+5,drop=FALSE]),ylim=c(0,1),type="l",lty=1)
     ltop = K[target,target]/min(log[,1])*cost[target]
     llow = min(log[,2],ltop,na.rm = TRUE)
     plot(log[,1],log[,2],log="xy",type="l",lty=1,ylim=c(llow,ltop),xlim=c(min(log[,1]),cost[nlevs]*K[nlevs,nlevs]/llow))
