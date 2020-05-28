@@ -27,7 +27,7 @@ expand_seq = function(x, fun=seq_len, matrix=TRUE) {
 ordered_rnorm_spectrum = function(f, k=2, seed, length_one=FALSE) {
   if (! missing(seed)) set.seed(seed)
   f = apply(f,2,round)
-  if (class(f) == "matrix") f = as.data.frame(f)
+  if (inherits(f,"matrix")) f = as.data.frame(f)
   size = max(sapply(f,max))
   D = ncol(f)
   ftot = expand_seq(rep(size,D),function(n) -n:n,matrix=FALSE)
