@@ -270,5 +270,5 @@ write.stl.default = function(x,con,ascii=FALSE) {
 #' @export
 write.stl.fracture_geom = function(x,con,ascii=FALSE, type=c("top","bottom"), ...) {
   meshes = lapply(type, function(type) as.mesh3d.fracture_geom(x, type, ...))
-  write.stl(meshes, con, ascii)
+  write.stl(meshes, con=con, ascii=ascii)
 }
