@@ -92,7 +92,7 @@ fracture_matrix = function(
     dims = c(10,10),
     span = diag(nrow=length(dims)),
     period = diag(nrow=length(dims)),
-    shift = rep(0,nrow=length(dims)),
+    shift = rep(0,length(dims)),
     power.iso,
     power.spectrum = function(f) power.iso(sqrt(rowSums(f*f))),
     corr.profile = function(k) 0,
