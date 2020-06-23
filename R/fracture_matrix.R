@@ -97,6 +97,8 @@ fracture_matrix = function(
     power.spectrum = function(f) power.iso(sqrt(rowSums(f*f))),
     corr.profile = function(k) 0,
     closed = 0.1, gap, seed, corr.method = c("midline","top","mixed"), length_one = FALSE, gauss.order = 1) {
+  span = as.matrix(span)
+  period = as.matrix(period)
   corr.method = match.arg(corr.method)
   n = length(dims)
   p_ = expand_seq(dims,seq_1)
@@ -130,6 +132,8 @@ fracture_matrix = function(
   power[1] = 0
   if (any(power < 0)) stop("Negative power spectrum")
   
+  power_mult = 1/det(period)
+  power = power * power_mult
   
   freq = sqrt(rowSums(f^2))
   wavelength = 1/freq
@@ -203,7 +207,8 @@ fracture_matrix = function(
     prob.closed = pnorm(-gap,0,sd=sqrt(var.diff)),
     length_one = length_one,
     gauss.order = gauss.order,
-    spec1D = tapply(power,abs(f[,1]),sum)/2
+    spec1D = tapply(power,abs(f[,1]),sum)/2,
+    power_mult = power_mult
   )
   class(ret) = "fracture_matrix"
   ret
