@@ -92,6 +92,7 @@ fracture_matrix = function(
     dims = c(10,10),
     span = diag(nrow=length(dims)),
     period = diag(nrow=length(dims)),
+    shift = rep(0,nrow=length(dims)),
     power.iso,
     power.spectrum = function(f) power.iso(sqrt(rowSums(f*f))),
     corr.profile = function(k) 0,
@@ -137,25 +138,26 @@ fracture_matrix = function(
   
   rad = sqrt(power)
   corr.prof = corr.profile(wavelength)
+  fshift = f %*% shift * pi * 2
   if (any(abs(corr.prof) > 1)) stop("Correlation outside of [-1,1] interval")
   if (corr.method == "midline") { # midline always the same
     # ang = acos(corr)/2
     # M = matrix(c(cos(ang),sin(ang),cos(ang),-sin(ang)),2,2)
     corr.angle = acos(corr.prof)/2
-    corr.coef = list((cos(corr.angle) * coef[,1] + sin(corr.angle) * coef[,2]) * rad,
-                     (cos(corr.angle) * coef[,1] - sin(corr.angle) * coef[,2]) * rad)
+    corr.coef = list((cos(corr.angle) * coef[,1] + sin(corr.angle) * coef[,2]) * rad * exp(- 0.5i * fshift/2),
+                     (cos(corr.angle) * coef[,1] - sin(corr.angle) * coef[,2]) * rad * exp(  0.5i * fshift/2))
   } else if (corr.method == "mixed") { # nice mix of two random variables
     # ang = asin(corr)/2
     # M = matrix(c(cos(ang),sin(ang),sin(ang),cos(ang)),2,2)
     corr.angle = asin(corr.prof)/2
-    corr.coef = list((cos(corr.angle) * coef[,1] + sin(corr.angle) * coef[,2]) * rad,
-                     (sin(corr.angle) * coef[,1] + cos(corr.angle) * coef[,2]) * rad)
+    corr.coef = list((cos(corr.angle) * coef[,1] + sin(corr.angle) * coef[,2]) * rad * exp(- 0.5i * fshift),
+                     (sin(corr.angle) * coef[,1] + cos(corr.angle) * coef[,2]) * rad * exp(  0.5i * fshift))
   } else if (corr.method == "top") { # top surface always the same
     # ang = asin(corr)
     # M = matrix(c(1,0,sin(ang),cos(ang)),2,2)
     corr.angle = asin(corr.prof)
     corr.coef = list((coef[,1]) * rad,
-                     (sin(corr.angle) * coef[,1] + cos(corr.angle) * coef[,2]) * rad)
+                     (sin(corr.angle) * coef[,1] + cos(corr.angle) * coef[,2]) * rad * exp(  1i * fshift))
   } else {
     stop("unknown corr.method")
   }
