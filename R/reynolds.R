@@ -3,7 +3,7 @@
 #' @param q.fun the dependence of the flux on the heights, by default h^3/12
 #' @importFrom Matrix sparseMatrix solve t 
 #' @export
-solve_reynolds = function(obj, q.fun=function(h) h^3/12, method=c("direct","iterative","system")) {
+solve_reynolds = function(obj, q.fun=function(h) h^3/12, method=c("direct","iterative","system"), rule) {
   method = match.arg(method)
   p  = cbind(obj$points$x, obj$points$y)
   p1 = p[obj$triangles[,1],]
@@ -14,7 +14,20 @@ solve_reynolds = function(obj, q.fun=function(h) h^3/12, method=c("direct","iter
   h2 = obj$points$h[obj$triangles[,2]]
   h3 = obj$points$h[obj$triangles[,3]]
   
-  trint = (q.fun(h1)+q.fun(h2)+q.fun(h3))/3
+  if (missing(rule)) {
+    trint = (q.fun(h1)+q.fun(h2)+q.fun(h3))/3
+    trint = cbind(trint,0,0,trint)
+  } else {
+    if (! rule %in% names(fekete)) stop("Wrong fekete rule")
+    rule = fekete[[rule]]
+    H = cbind(h1,h2,h3)
+    H = H %*% t(rule$points)
+    int1 = q.fun(H) %*% rule$weights
+    int2 = 1/((1/q.fun(H)) %*% rule$weights)
+    return (cbind(int1,int2))
+    trint = int2
+    trint = cbind(trint,0,0,trint)
+  }
   
   altitude = function(p1,p2,p3) {
     v = p1 - p2
@@ -36,18 +49,17 @@ solve_reynolds = function(obj, q.fun=function(h) h^3/12, method=c("direct","iter
   g1 = altitude(p1,p2,p3)
   g2 = altitude(p2,p3,p1)
   g3 = altitude(p3,p1,p2)
-  A11 = rowSums(g1*g1)*trinta
-  A12 = rowSums(g1*g2)*trinta
-  A13 = rowSums(g1*g3)*trinta
-  A22 = rowSums(g2*g2)*trinta
-  A23 = rowSums(g2*g3)*trinta
-  A33 = rowSums(g3*g3)*trinta
-  
+  vMw = function(v,w,m) v[,1]*w[,1]*m[,1] + v[,2]*w[,1]*m[,2] + v[,1]*w[,2]*m[,3] + v[,2]*w[,2]*m[,4]
+  A11 = vMw(g1,g1,trinta)
+  A12 = vMw(g1,g2,trinta)
+  A13 = vMw(g1,g3,trinta)
+  A22 = vMw(g2,g2,trinta)
+  A23 = vMw(g2,g3,trinta)
+  A33 = vMw(g3,g3,trinta)
+
   i = rep(0, nrow(obj$points))
   i[sel] = as.integer(factor(paste(round(obj$points$x[sel],5) %% 1,round(obj$points$y[sel],5) %% 1,sep="_")))
   i[!sel] = seq_len(sum(!sel)) + max(i)
-  
-  sel = trinta >= max(trinta) * 1e-6
   
   t1 = i[obj$triangles[,1]]
   t2 = i[obj$triangles[,2]]
@@ -62,7 +74,18 @@ solve_reynolds = function(obj, q.fun=function(h) h^3/12, method=c("direct","iter
   
   BM = rbind(cbind(M,A),cbind(t(A),0))
   
-  D = sparseMatrix(i=c(t1,t2,t3,t1,t2,t3),j=rep(1:2,each=length(t1)*3), x=c(g1[,1],g2[,1],g3[,1],g1[,2],g2[,2],g3[,2])*trinta)
+  #D = sparseMatrix(i=c(t1,t2,t3,t1,t2,t3),j=rep(1:2,each=length(t1)*3), x=c(g1[,1],g2[,1],g3[,1],g1[,2],g2[,2],g3[,2])*trinta)
+  D = sparseMatrix(
+    i=c(t1,t2,t3,t1,t2,t3),
+    j=rep(1:2,each=length(t1)*3),
+    x=c(
+      g1[,1]*trinta[,1] + g1[,2]*trinta[,2],
+      g2[,1]*trinta[,1] + g2[,2]*trinta[,2],
+      g3[,1]*trinta[,1] + g3[,2]*trinta[,2],
+      g1[,1]*trinta[,3] + g1[,2]*trinta[,4],
+      g2[,1]*trinta[,3] + g2[,2]*trinta[,4],
+      g3[,1]*trinta[,3] + g3[,2]*trinta[,4])
+  )
   
   RHS = rbind(D,0)  
 
@@ -93,7 +116,7 @@ solve_reynolds = function(obj, q.fun=function(h) h^3/12, method=c("direct","iter
   VOL = sum((h1+h2+h3)/3*a)
   area = sum(a)
   hmean = VOL/area
-  perm_hom = sum(trinta)
+  perm_hom = matrix(colSums(trinta),2,2)
   I = diag(nrow=2)
   list(
     perm_diff = perm_diff,
