@@ -105,7 +105,8 @@ solve_reynolds = function(obj, q.fun=function(h) h^3/12, method=c("direct","iter
     hmean = hmean,
     perm_hmean = q.fun(hmean)*area,
     iter = iter,
-    errors = errors
+    errors = errors,
+    lambdas = as.vector(X[nrow(D)+1,])
   ) 
 }
 
