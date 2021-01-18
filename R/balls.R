@@ -85,10 +85,19 @@ fracture.balls = function(obj,
         c(B$z, B$z, B$z+period, B$z+period, P$y , P$y ))
       #print(dim(X))
       ds = fields::fields.rdist.near(X[1:N,], X[1:n,], delta = 2*(Rmax+margin_opt),mean.neighbor = mean.neighbor,max.points = mean.neighbor*n)
-      tds = data.frame(d = ds$ra, i = ds$ind[,1], j = ds$ind[,2])
+      if (all(ds$ra < 0)) {
+        tds = data.frame(d = c(), i = c(), j = c())
+      } else {
+        tds = data.frame(d = ds$ra, i = ds$ind[,1], j = ds$ind[,2])
+      }
       ds = fields::fields.rdist.near(X[(N+1):nrow(X),], X[1:n,], delta = Rmax+margin_opt, mean.neighbor = mean.neighbor, max.points = mean.neighbor*n)
-      if (length(ds$ra) == 1) tds = rbind(tds, data.frame(d = ds$ra, i = ds$ind[1]+N, j = ds$ind[2]))
-        else if (length(ds$ra) != 0) tds = rbind(tds, data.frame(d = ds$ra, i = ds$ind[,1]+N, j = ds$ind[,2]))
+      if (length(ds$ra) == 1) {
+        if (ds$ra >= 0) {
+          tds = rbind(tds, data.frame(d = ds$ra, i = ds$ind[1]+N, j = ds$ind[2]))
+        }
+      } else {
+        if (length(ds$ra) != 0) tds = rbind(tds, data.frame(d = ds$ra, i = ds$ind[,1]+N, j = ds$ind[,2]))
+      }
       sel = tds$i > tds$j
       tds = tds[sel,,drop=FALSE]
       tds$iball = Xi[tds$i]
@@ -96,17 +105,18 @@ fracture.balls = function(obj,
       tds$v[tds$iball > 0] = tds$v[tds$iball > 0] - B$r[tds$iball[tds$iball > 0]]
       #print(range(tds$v))
       if (i == 1) start_ds = { if (nrow(tds) > 0) min(tds$v) else Inf }
-      if (all(tds$v > 0) || i == relax_iterations + 1) {
-        finish_ds = { if (nrow(tds) > 0) min(tds$v) else Inf }
-        cat("Changed the minimal distance from", start_ds, "to", finish_ds, "in", i-1, "iterations\n");
-        break;
-      }
       p = X[tds$i,,drop=FALSE] - X[tds$j,,drop=FALSE]
       pl = sqrt(rowSums(p^2))
       sel = pl < 1e-10
       if (any(sel)) {
         cat("Some zero distances\n")
         p = p[!sel,]; pl = pl[!sel]; tds = tds[!sel,]
+        
+      }
+      if (all(tds$v > 0) || i == relax_iterations + 1) {
+        finish_ds = { if (nrow(tds) > 0) min(tds$v) else Inf }
+        cat("Changed the minimal distance from", start_ds, "to", finish_ds, "in", i-1, "iterations\n");
+        break;
       }
       p = p / pl * pmax(0,margin - tds$v)
       p = rbind(-p,p)
