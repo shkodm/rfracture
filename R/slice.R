@@ -5,30 +5,54 @@
 #' @param obj fracture_geom object
 #' @param by name of the property/field by which to slice
 #' @param level threshold level on the property
-#' @param value type of the returned object (see return value)
-#' @param flatten if to snap values to level
-#' @param eps the numerical accuracy
+#' @param type type of the returned object (see return value)
+#' @param flatten if to snap values to the threshold level
+#' @param eps the numerical accuracy to use
 #' @param verbose print information about cutting
+#' @param edge_is_border if to mark all new edges border edges
 #' 
 #' @return
-#' If value is "all", the function returns the same fracture_geom object, with some of the triangles sliced.
-#' If value is "above", the function returns only the part of the geometry, for which property > level
+#' If type is "all", the function returns the same fracture_geom object, with some of the triangles sliced.
+#' If type is "above", the function returns only the part of the geometry, for which property > level
 #' "below" returns the opposite.
 #' "equal" returns a list(points, edges), where points are points with property == level, and edges are the connecting edges (two columns)
 #' 
 #' @examples
 #' power.iso = function(f) 0.0001 * f^{-4.5}
 #' ret = fracture_geom(refine=4, power.iso = power.iso)
-#' ret2 = slice(ret, value="above")
+#' ret2 = slice(ret, type="above")
 #' 
 #' @export
-slice = function(obj, by="h", flatten="edge", value="all", cut.triangles=TRUE, cut.edges=TRUE, cut.vertexes=TRUE, level=0, eps=1e-10, verbose=FALSE) {
-  # select points below level
+slice = function(
+    obj,
+    by,
+    level,
+    type=c("all","above","below","equal"),
+    flatten=c("edge","above","below","none"),
+    edge_is_border,
+    cut.triangles=TRUE, cut.edges=TRUE, cut.vertexes=TRUE,
+    eps=1e-10,
+    verbose=FALSE
+  ) {
+  type = match.arg(type)
+  flatten = match.arg(flatten)
+  if (missing(by)) stop("'by' is missing")
+  if (! is.character(by)) stop("'by' is not string")
+  if (length(by) != 1) stop("'by' is not length one")
+  if (! by %in% names(obj$points)) stop("'by' is not one of the fields")
+  if (missing(level)) stop("'level' is missing")
+  if (! is.numeric(level)) stop("'level' is not numeric")
+  if (length(level) != 1) stop("'level' is not length one")
+  
   if (is.null(obj$edge)) {
     obj$edge = matrix(nrow=0, ncol=2)
     obj$border = logical(0)
   }
-  if (is.null(obj$vertex)) obj$vertex = matrix(nrow=0, ncol=1)
+  if (is.null(obj$vertex)) {
+    obj$vertex = matrix(nrow=0, ncol=1)
+  }
+  
+  # select points below level
   psel = obj$points[,by] < level
   
   #select triangles crossing level
@@ -118,18 +142,20 @@ slice = function(obj, by="h", flatten="edge", value="all", cut.triangles=TRUE, c
   ed_id = matrix(id[seq_len(nrow(ed)) + nrow(tr)*2],ncol=1,nrow=nrow(ed))
   ed_id_degen = matrix(id_degen[seq_len(nrow(ed)) + nrow(tr)*2],ncol=1,nrow=nrow(ed))
   
-  if (value == "edge") {
-    edge_is_border = TRUE
-  } else if (value == "above") {
-    edge_is_border = TRUE
-  } else if (value == "below") {
-    edge_is_border = TRUE
-  } else if (value == "all") {
-    edge_is_border = FALSE
-  } else if (value == "none") {
-    edge_is_border = FALSE
-  } else stop("Unknown flatten parameter")
-  
+  if (missing(edge_is_border)) {
+    if (type %in% c("above","below")) {
+      if (by == "h" && level == 0) {
+        edge_is_border = FALSE
+      } else {
+        edge_is_border = TRUE
+      }
+    } else {
+      edge_is_border = FALSE
+    }
+  } else {
+    if (! is.logical(edge_is_border)) stop("'edge_is_border' is not logical")
+    if (length(edge_is_border) != 1) stop("'edge_is_border' is not of length 1")
+  }  
   ntr = NULL
   edge = NULL
   edge_b = NULL
@@ -175,15 +201,15 @@ slice = function(obj, by="h", flatten="edge", value="all", cut.triangles=TRUE, c
   obj$border = c(obj$border[!esel], edge_b)
   obj$vertex = rbind(obj$vertex, vertex)
 
-  if (value == "edge") {
+  if (type == "edge") {
     psel = on_edge
-  } else if (value == "above") {
+  } else if (type == "above") {
     psel = on_edge | above
-  } else if (value == "below") {
+  } else if (type == "below") {
     psel = on_edge | below
-  } else if (value == "all") {
+  } else if (type == "all") {
     psel = rep(TRUE,nrow(obj$points))
-  } else if (value == "none") {
+  } else if (type == "none") {
     psel = rep(FALSE,nrow(obj$points))
   } else stop("Unknown flatten parameter")
   
@@ -231,9 +257,9 @@ slice = function(obj, by="h", flatten="edge", value="all", cut.triangles=TRUE, c
 #' @param ... other arguments for slice
 #' @export
 cut.fracture_geom = function(x, ...){
-  x = slice(x, by="x", level=0, value="above", ...)
-  x = slice(x, by="x", level=x$width, value="below", ...)
-  x = slice(x, by="y", level=0, value="above", ...)
-  x = slice(x, by="y", level=x$width, value="below", ...)
+  x = slice(x, by="x", level=0, type="above", ...)
+  x = slice(x, by="x", level=x$width, type="below", ...)
+  x = slice(x, by="y", level=0, type="above", ...)
+  x = slice(x, by="y", level=x$width, type="below", ...)
   x
 }

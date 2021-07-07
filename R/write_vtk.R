@@ -1,4 +1,3 @@
-obj = ret
 
 write.vtk.tet.mesh = function(obj, filename){
   points = rbind(
