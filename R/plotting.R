@@ -34,17 +34,11 @@ fracture3d = function(obj, type=c("top","bottom"), col, edge.col=NA, vertex.col=
 #' @param ... other arguments passed to tmesh3d
 #' 
 #' @export
-as.mesh3d.fracture_geom = function(obj, type=c("middle","top","bottom",""), ...) {
-  if (type == "top") {
-    P = obj$points[,c("f1","x","y")]
-  } else if (type == "bottom") {
-    P = obj$points[,c("f2","x","y")]
-  } else if (type == "middle") {
-    P = obj$points[,c("fm","x","y")]
-  } else stop("unknown type:", type)
+as.mesh3d.fracture_geom = function(obj, type=c("top","bottom")) {
+  ex = extract.tet.mesh(obj, type=type)
   obj = list(
-    vb = rbind(t(as.matrix(P)),1),
-    it = t(as.matrix(obj$triangles)),
+    vb = rbind(t(as.matrix(ex$points)),1),
+    it = t(as.matrix(ex$triangles[,1:3])),
     material = list(),
     normals = NULL,
     meshColor = "vertices",
