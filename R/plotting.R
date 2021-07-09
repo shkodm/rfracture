@@ -6,8 +6,8 @@
 #' @param add if TRUE, add plot to existing rgl window
 #' 
 #' @export
-fracture3d = function(obj, type=c("top","bottom"), col, edge.col=NA, vertex.col=NA, asp="iso", add=FALSE, ...) {
-  ex = extract.tet.mesh(obj, type=type)
+fracture3d = function(obj, type=c("top","bottom"), col, edge.col=NA, vertex.col=NA, asp="iso", add=FALSE, transform=function(points) points, ...) {
+  ex = extract.tet.mesh(obj, type=type, transform=transform)
   n = nlevels(ex$triangles$tag)
   if (missing(col)) col = seq_len(n)+1
   if (length(col) == 1) col = rep(col, n)
@@ -34,8 +34,18 @@ fracture3d = function(obj, type=c("top","bottom"), col, edge.col=NA, vertex.col=
 #' @param ... other arguments passed to tmesh3d
 #' 
 #' @export
-as.mesh3d.fracture_geom = function(obj, type=c("top","bottom")) {
-  ex = extract.tet.mesh(obj, type=type)
+as.mesh3d.fracture_geom = function(obj, type=c("top","bottom"), transform=function(points) points) {
+  ex = extract.tet.mesh(obj, type=type, transform=transform)
+  v1 = ex$points[ex$triangles$v2,] -  ex$points[ex$triangles$v1,]
+  v2 = ex$points[ex$triangles$v3,] -  ex$points[ex$triangles$v1,]
+  xprod = function(v1,v2) cbind(v1[2]*v2[3]-v2[2]*v1[3], v1[3]*v2[1]-v2[3]*v1[1], v1[1]*v2[2]-v2[1]*v1[2])
+  w = xprod(v1,v2)
+  a = sqrt(rowSums(w^2))
+  d1 = sqrt(rowSums(v1^2))
+  d2 = sqrt(rowSums(v2^2))
+  d3 = sqrt(rowSums((v1-v2)^2))
+  sel = pmax(d1,d2,d3)^2 / a < 200
+  ex$triangles = ex$triangles[sel,]
   obj = list(
     vb = rbind(t(as.matrix(ex$points)),1),
     it = t(as.matrix(ex$triangles[,1:3])),
@@ -46,44 +56,6 @@ as.mesh3d.fracture_geom = function(obj, type=c("top","bottom")) {
   )
   class(obj) = c("mesh3d", "shape3d")
   obj
-}
-
-
-border3d = function(obj, f1, f2, add=FALSE, ...) {
-  edges = rbind(obj$triangles[,1:2],obj$triangles[,2:3],obj$triangles[,c(1,3)])
-  sel = edges[,1] > edges[,2]
-  edges[sel,] = edges[sel,c(2,1)]
-  edges = edges[order(edges[,1],edges[,2]),]
-  a = !duplicated(edges)
-  sel = which(table(cumsum(a)) == 1)
-  edges = edges[a,][sel,]
-  
-  plot(obj$points$x[edges[,1]],obj$points$y[edges[,2]],asp=1)
-  
-  if (missing(f1)) f1 = obj$points$f1
-  if (missing(f2)) f2 = obj$points$f2
-  if (length(f1) == 1) f1 = rep(f1, nrow(obj$points))
-  if (length(f2) == 1) f2 = rep(f2, nrow(obj$points))
-  open1 = f1[edges[,1]] != f2[edges[,1]]
-  open2 = f1[edges[,2]] != f2[edges[,2]]
-  
-  t1 = rbind(
-    f1[edges[open1,1]],obj$points$x[edges[open1,1]],obj$points$y[edges[open1,1]],
-    f2[edges[open1,1]],obj$points$x[edges[open1,1]],obj$points$y[edges[open1,1]],
-    f2[edges[open1,2]],obj$points$x[edges[open1,2]],obj$points$y[edges[open1,2]])
-  dim(t1) = c(3,sum(open1)*3)
-  t1 = t(t1)
-  t2 = rbind(
-    f2[edges[open2,2]],obj$points$x[edges[open2,2]],obj$points$y[edges[open2,2]],
-    f1[edges[open2,2]],obj$points$x[edges[open2,2]],obj$points$y[edges[open2,2]],
-    f1[edges[open2,1]],obj$points$x[edges[open2,1]],obj$points$y[edges[open2,1]])
-  dim(t2) = c(3,sum(open2)*3)
-  t2 = t(t2)
-  if (!add) {
-    clear3d()
-    aspect3d("iso")
-  }
-  triangles3d(rbind(t1,t2),...)
 }
 
 #' Plot fracture matrix

@@ -7,9 +7,10 @@ sortRows = function(M) {
 #' 
 #' @param obj the fracture_geom object
 #' @param type selects one or more of: top, bottom, middle, border, edge
+#' @param tranform the function used for transform the points
 #' 
 #' @export
-extract.tet.mesh = function(obj, type=c("top","bottom")) {
+extract.tet.mesh = function(obj, type=c("top","bottom"), transform=function(points) points) {
   if (! "fracture_geom" %in% class(obj)) stop("'obj' not of fracture_geom class")
   if (! is.character(type)) stop("'type' not a string")
   points = data.frame(
@@ -17,6 +18,7 @@ extract.tet.mesh = function(obj, type=c("top","bottom")) {
     y = c(obj$points[, "y"], obj$points[, "y"], obj$points[, "y"]),
     z = c(obj$points[,"f1"], obj$points[,"f2"], obj$points[,"fm"])
   )
+  
   k = nrow(obj$points)
   edges = NULL
   triangles = NULL
@@ -55,6 +57,8 @@ extract.tet.mesh = function(obj, type=c("top","bottom")) {
     tag = "interior",
     stringsAsFactors = TRUE
   )
+  sel = abs(points$z[tetrahedra$v1] - points$z[tetrahedra$v2]) < 1e-10
+  tetrahedra = tetrahedra[!sel,,drop=FALSE]
 
   edges = edges[edges$tag %in% type,,drop=FALSE]
   triangles = triangles[triangles$tag %in% type,,drop=FALSE]
@@ -76,7 +80,7 @@ extract.tet.mesh = function(obj, type=c("top","bottom")) {
   tetrahedra$v2 = map[tetrahedra$v2]
   tetrahedra$v3 = map[tetrahedra$v3]
   tetrahedra$v4 = map[tetrahedra$v4]
-  
+  points = transform(points)
   list(
     points=points,
     edges=edges,
