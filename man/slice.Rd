@@ -6,13 +6,14 @@
 \usage{
 slice(
   obj,
-  by = "h",
-  flatten = "edge",
-  value = "all",
+  by,
+  level,
+  type = c("all", "above", "below", "equal"),
+  flatten = c("edge", "above", "below", "none"),
+  edge_is_border,
   cut.triangles = TRUE,
   cut.edges = TRUE,
   cut.vertexes = TRUE,
-  level = 0,
   eps = 1e-10,
   verbose = FALSE
 )
@@ -22,19 +23,21 @@ slice(
 
 \item{by}{name of the property/field by which to slice}
 
-\item{flatten}{if to snap values to level}
-
-\item{value}{type of the returned object (see return value)}
-
 \item{level}{threshold level on the property}
 
-\item{eps}{the numerical accuracy}
+\item{type}{type of the returned object (see return value)}
+
+\item{flatten}{if to snap values to the threshold level}
+
+\item{edge_is_border}{if to mark all new edges border edges}
+
+\item{eps}{the numerical accuracy to use}
 
 \item{verbose}{print information about cutting}
 }
 \value{
-If value is "all", the function returns the same fracture_geom object, with some of the triangles sliced.
-If value is "above", the function returns only the part of the geometry, for which property > level
+If type is "all", the function returns the same fracture_geom object, with some of the triangles sliced.
+If type is "above", the function returns only the part of the geometry, for which property > level
 "below" returns the opposite.
 "equal" returns a list(points, edges), where points are points with property == level, and edges are the connecting edges (two columns)
 }
@@ -44,6 +47,6 @@ Slices the fracture with respect to a specific property, and threshold level
 \examples{
 power.iso = function(f) 0.0001 * f^{-4.5}
 ret = fracture_geom(refine=4, power.iso = power.iso)
-ret2 = slice(ret, value="above")
+ret2 = slice(ret, type="above")
 
 }

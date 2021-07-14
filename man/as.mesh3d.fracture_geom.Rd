@@ -4,7 +4,11 @@
 \alias{as.mesh3d.fracture_geom}
 \title{Makes a mesh3d object from fracture}
 \usage{
-as.mesh3d.fracture_geom(obj, type = "top", ...)
+as.mesh3d.fracture_geom(
+  obj,
+  type = c("top", "bottom"),
+  transform = function(points) points
+)
 }
 \arguments{
 \item{obj}{the fracture_geom object to plot in 3d}

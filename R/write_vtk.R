@@ -1,6 +1,12 @@
-
-write.vtk.tet.mesh = function(obj, filename, transform=transform){
-  ex = extract.tet.mesh(obj, type="interior", transform)
+#' Writes a tet-mesh of the fracture geometry in a legacy VTK format
+#' 
+#' @param obj the fracture_geom object
+#' @param filename name of the VTK file to write
+#' @param ... arguments passed to extract.tet.mesh, such as transform, or genie.h
+#' 
+#' @export
+write.vtk.tet.mesh = function(obj, filename, ...){
+  ex = extract.tet.mesh(obj, type="interior", ...)
   f = file(filename,"w")
   writeLines(c(
     "# vtk DataFile Version 2.0",

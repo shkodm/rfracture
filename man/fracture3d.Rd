@@ -7,10 +7,13 @@
 fracture3d(
   obj,
   type = c("top", "bottom"),
-  col = c(2, 3, 4),
+  col,
   edge.col = NA,
   vertex.col = NA,
-  add = FALSE
+  asp = "iso",
+  add = FALSE,
+  transform = function(points) points,
+  ...
 )
 }
 \arguments{

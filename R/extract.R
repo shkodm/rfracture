@@ -8,6 +8,7 @@ sortRows = function(M) {
 #' @param obj the fracture_geom object
 #' @param type selects one or more of: top, bottom, middle, border, edge
 #' @param tranform the function used for transform the points
+#' @param genie.h level for snapping points together (needs genieclust package)
 #' 
 #' @export
 extract.tet.mesh = function(obj, type=c("top","bottom"), transform=function(points) points, genie.h) {
@@ -48,9 +49,16 @@ extract.tet.mesh = function(obj, type=c("top","bottom"), transform=function(poin
   selp = na.omit(unique(c(simplexes$v1,simplexes$v2,simplexes$v3,simplexes$v4)))
   map = rep(0,nrow(points)); map[selp] = seq_len(length(selp))
   
+  points = points[selp,,drop=FALSE]
+  simplexes$v1 = map[simplexes$v1]
+  simplexes$v2 = map[simplexes$v2]
+  simplexes$v3 = map[simplexes$v3]
+  simplexes$v4 = map[simplexes$v4]
+  
   if (!missing(genie.h)) {
     cl = genieclust::gclust(points)
     map = cutree(cl, h = genie.h)
+    cat("genie snapping reduced the number of points from ",nrow(points)," to ",max(map),"\n")
     points = aggregate(points, by=list(map), mean)
     points$Group.1 = NULL
     simplexes$v1 = map[simplexes$v1]
@@ -62,13 +70,8 @@ extract.tet.mesh = function(obj, type=c("top","bottom"), transform=function(poin
   dups = pmax(simplexes$v1 == simplexes$v2,simplexes$v1 == simplexes$v3,simplexes$v2 == simplexes$v3,simplexes$v1 == simplexes$v4,simplexes$v2 == simplexes$v4,simplexes$v3 == simplexes$v4,na.rm = TRUE)
   simplexes = simplexes[dups == 0,]
   
-  points = points[selp,,drop=FALSE]
-  simplexes$v1 = map[simplexes$v1]
-  simplexes$v2 = map[simplexes$v2]
-  simplexes$v3 = map[simplexes$v3]
-  simplexes$v4 = map[simplexes$v4]
-  
   points = transform(points)
+  
   list(
     points     = points,
     vertexes   = simplexes[simplexes$order == 1,,drop=FALSE],
