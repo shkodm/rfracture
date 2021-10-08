@@ -58,7 +58,7 @@ solve_reynolds = function(obj, q.fun=function(h) h^3/12, method=c("direct","iter
   A33 = vMw(g3,g3,trinta)
 
   i = rep(0, nrow(obj$points))
-  i[sel] = as.integer(factor(paste(round(obj$points$x[sel],5) %% 1,round(obj$points$y[sel],5) %% 1,sep="_")))
+  i[sel] = as.integer(factor(paste(round(obj$points$x[sel]/obj$width,5) %% 1,round(obj$points$y[sel]/obj$width,5) %% 1,sep="_")))
   i[!sel] = seq_len(sum(!sel)) + max(i)
   
   t1 = i[obj$triangles[,1]]
