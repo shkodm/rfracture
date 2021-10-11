@@ -3,9 +3,23 @@
 #' @param q.fun the dependence of the flux on the heights, by default h^3/12
 #' @importFrom Matrix sparseMatrix solve t 
 #' @export
-solve_reynolds = function(obj, q.fun=function(h) h^3/12, method=c("direct","iterative","system"), rule) {
+solve_reynolds = function(obj, q.fun=function(h) h^3/12, method=c("direct","iterative","system"), rule, alt=0, hmult='none', ...) {
   method = match.arg(method)
-  p  = cbind(obj$points$x, obj$points$y)
+  if (is.character(alt)) {
+    if (alt %in% names(obj$points)) {
+      alt = obj$points$fm
+    } else {
+      stop("Unknown 'alt' value in solve_reynolds, possible options:", paste(names(obj$points,sep=",")))
+    }
+  }
+  if (is.numeric(alt)) {
+    if (! length(alt) %in% c(1,nrow(obj$points))) {
+      stop("Wrong length of 'alt' in solve_reynolds.")
+    }
+  } else {
+    stop("'alt' in solve_reynolds should be either field name or vector of values")
+  }
+  p  = cbind(obj$points$x, obj$points$y, alt)
   p1 = p[obj$triangles[,1],]
   p2 = p[obj$triangles[,2],]
   p3 = p[obj$triangles[,3],]
@@ -14,82 +28,78 @@ solve_reynolds = function(obj, q.fun=function(h) h^3/12, method=c("direct","iter
   h2 = obj$points$h[obj$triangles[,2]]
   h3 = obj$points$h[obj$triangles[,3]]
   
-  if (missing(rule)) {
-    trint = (q.fun(h1)+q.fun(h2)+q.fun(h3))/3
-    trint = cbind(trint,0,0,trint)
-  } else {
-    if (! rule %in% names(fekete)) stop("Wrong fekete rule")
-    rule = fekete[[rule]]
-    H = cbind(h1,h2,h3)
-    H = H %*% t(rule$points)
-    int1 = q.fun(H) %*% rule$weights
-    int2 = 1/((1/q.fun(H)) %*% rule$weights)
-    return (cbind(int1,int2))
-    trint = int2
-    trint = cbind(trint,0,0,trint)
+  grad = function(p1,p2,p3) {
+    V2 = p1 - p2
+    V1 = p3 - p2
+    M11 = rowSums(V1*V1)
+    M12 = rowSums(V1*V2)
+    M22 = rowSums(V2*V2)
+    DET = M11*M22 - M12*M12
+    (-M12*V1 + M11*V2) / DET
   }
   
-  altitude = function(p1,p2,p3) {
-    v = p1 - p2
-    w = p3 - p2
-    g = v - rowSums(v*w) / rowSums(w*w) * w
-    g / rowSums(g*v)
-  }
-
   sel = FALSE
   sel = sel | abs(obj$points$x - 0) < 1e-12
   sel = sel | abs(obj$points$x - obj$width) < 1e-12
   sel = sel | abs(obj$points$y - 0) < 1e-12
   sel = sel | abs(obj$points$y - obj$width) < 1e-12
-
+  
   v = p1 - p2
   w = p3 - p2
-  a = abs(v[,2]*w[,1] - v[,1]*w[,2])/2
+  
+  n = cbind(v[,2]*w[,3] - v[,3]*w[,2],v[,3]*w[,1] - v[,1]*w[,3],v[,1]*w[,2] - v[,2]*w[,1])
+  a = sqrt(rowSums(n*n))
+  n = n / a
+  a = a / 2
+  
+  if (is.character(hmult)) {
+    if (hmult == "slant") {
+      hmult = abs(n[,3])
+    } else if (hmult == "none") {
+      hmult = 1
+    }
+  }
+  if (is.numeric(hmult)) {
+    if (! length(hmult) %in% c(1, nrow(obj$triangles))) {
+      stop("Wrong length of 'hmult' in solve_reynolds")
+    }
+  } else {
+    stop("'hmult' in solve_reynolds, should be 'slant', 'none' or vector of values")
+  }
+  trint = (q.fun(hmult*h1)+q.fun(hmult*h2)+q.fun(hmult*h3))/3
+  
   trinta = trint * a
-  g1 = altitude(p1,p2,p3)
-  g2 = altitude(p2,p3,p1)
-  g3 = altitude(p3,p1,p2)
-  vMw = function(v,w,m) v[,1]*w[,1]*m[,1] + v[,2]*w[,1]*m[,2] + v[,1]*w[,2]*m[,3] + v[,2]*w[,2]*m[,4]
+  g1 = grad(p1,p2,p3)
+  g2 = grad(p2,p3,p1)
+  g3 = grad(p3,p1,p2)
+  vMw = function(v,w,m) m*rowSums(v*w)
   A11 = vMw(g1,g1,trinta)
   A12 = vMw(g1,g2,trinta)
   A13 = vMw(g1,g3,trinta)
   A22 = vMw(g2,g2,trinta)
   A23 = vMw(g2,g3,trinta)
   A33 = vMw(g3,g3,trinta)
-
+  
   i = rep(0, nrow(obj$points))
   i[sel] = as.integer(factor(paste(round(obj$points$x[sel]/obj$width,5) %% 1,round(obj$points$y[sel]/obj$width,5) %% 1,sep="_")))
   i[!sel] = seq_len(sum(!sel)) + max(i)
   
-  t1 = i[obj$triangles[,1]]
-  t2 = i[obj$triangles[,2]]
-  t3 = i[obj$triangles[,3]]
+  t1 = obj$triangles[,1]
+  t2 = obj$triangles[,2]
+  t3 = obj$triangles[,3]
   
-  M = data.frame(i = c( t1, t1, t1, t2, t2, t2, t3, t3, t3),
-                 j = c( t1, t2, t3, t1, t2, t3, t1, t2, t3),
-                 v = c(A11,A12,A13,A12,A22,A23,A13,A23,A33))
-  
+  Per = sparseMatrix(i=i, j=seq_along(i), x=1)
+  M = sparseMatrix( i = c( t1, t1, t1, t2, t2, t2, t3, t3, t3),
+                    j = c( t1, t2, t3, t1, t2, t3, t1, t2, t3),
+                    x = c(A11,A12,A13,A12,A22,A23,A13,A23,A33) )
   A = sparseMatrix(i=c(t1,t2,t3), j=rep(1,length(t1)*3), x=c(a,a,a)/3)
-  M = sparseMatrix(i=M$i, j=M$j, x=M$v)
+  D = M %*% p[,1:2]
   
-  BM = rbind(cbind(M,A),cbind(t(A),0))
-  
-  #D = sparseMatrix(i=c(t1,t2,t3,t1,t2,t3),j=rep(1:2,each=length(t1)*3), x=c(g1[,1],g2[,1],g3[,1],g1[,2],g2[,2],g3[,2])*trinta)
-  D = sparseMatrix(
-    i=c(t1,t2,t3,t1,t2,t3),
-    j=rep(1:2,each=length(t1)*3),
-    x=c(
-      g1[,1]*trinta[,1] + g1[,2]*trinta[,2],
-      g2[,1]*trinta[,1] + g2[,2]*trinta[,2],
-      g3[,1]*trinta[,1] + g3[,2]*trinta[,2],
-      g1[,1]*trinta[,3] + g1[,2]*trinta[,4],
-      g2[,1]*trinta[,3] + g2[,2]*trinta[,4],
-      g3[,1]*trinta[,3] + g3[,2]*trinta[,4])
-  )
-  
-  RHS = rbind(D,0)  
+  BM = rbind(cbind(Per %*% M %*% t(Per),Per %*% A),cbind(t(Per %*% A),0))
+  RHS = rbind(Per %*% D,0)  
 
-  #The hard part
+  errors = NULL
+  # The hard part
   if (method == "direct") {
     X = try(cbind(
       solve(BM, RHS[,1]),
@@ -97,39 +107,41 @@ solve_reynolds = function(obj, q.fun=function(h) h^3/12, method=c("direct","iter
     ))
     if (inherits(X, "try-error")) {
       errors = "Solve failed"
-      perm_diff = matrix(NA,2,2)
-    } else {
-      perm_diff = -as.matrix(t(X) %*% RHS)
-      errors = NA
+      X = rep(NA,prod(dim(RHS)))
+      dim(X) = dim(RHS)
     }
     iter = NA
   } else if (method == "iterative") {
-    ret = Rlinsolve::lsolve.gmres(BM,RHS)
+    ret = solve_cg(BM, RHS, ...)
     X = ret$x
-    iter = ret$iter
+    iter = ret$iterations
     errors = ret$errors
-    perm_diff = -as.matrix(t(X) %*% RHS)
   } else if (method == "system") {
     return (list(matrix= BM, rhs=RHS))
   }
   
+  perm_diff = - as.matrix(t(RHS) %*% X)
+  perm_hom = as.matrix(t(p[,1:2]) %*% M %*% p[,1:2])
+  
   VOL = sum((h1+h2+h3)/3*a)
   area = sum(a)
+  base_area = obj$width^2
   hmean = VOL/area
-  perm_hom = matrix(colSums(trinta),2,2)
-  I = diag(nrow=2)
+  perm_diff = perm_diff / base_area
+  perm_hom  = perm_hom  / base_area
   list(
     perm_diff = perm_diff,
     perm_hom = perm_hom,
-    perm = perm_diff + I * perm_hom,
-    perm_gap = q.fun(obj$gap)*(obj$width*obj$width),
+    perm = perm_diff + perm_hom,
+    perm_gap = q.fun(obj$gap),
+    perm_hmean = q.fun(hmean),
     volume = VOL,
     area = area,
+    base_area = base_area,
     hmean = hmean,
-    perm_hmean = q.fun(hmean)*area,
     iter = iter,
     errors = errors,
-    lambdas = as.vector(X[nrow(D)+1,])
+    lambdas = as.vector(X[nrow(X),])
   ) 
 }
 
