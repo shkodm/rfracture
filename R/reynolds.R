@@ -143,7 +143,7 @@ solve_reynolds = function(obj, q.fun=function(h) h^3/12, method=c("direct","iter
 #' @param x0 Initial guess on solution
 #' 
 #' @export
-solve_cg = function(A, b, itmax = 800, epsjump=1e-6, eps, x0 = rep(0, ncol(A))) {
+solve_cg = function(A, b, itmax = 800, epsjump=1e-6, eps, x0 = rep(0, ncol(A)), print.every=500) {
   x = x0
   r = b - A %*% x
   q = r
@@ -153,6 +153,7 @@ solve_cg = function(A, b, itmax = 800, epsjump=1e-6, eps, x0 = rep(0, ncol(A))) 
   for (i in 1:itmax) {
     r2 = sum(r^2)
     res = c(res, r2)
+    if ((i %% print.every) == 0) cat("CG: iteration:",i," res:", r2, "\n",sep="")
     if (r2 < eps) break
     Aq = A %*% q
     alpha = sum(r * q)/sum(q * Aq)
