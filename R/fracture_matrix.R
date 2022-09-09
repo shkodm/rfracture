@@ -148,23 +148,36 @@ fracture_matrix = function(
     # ang = acos(corr)/2
     # M = matrix(c(cos(ang),sin(ang),cos(ang),-sin(ang)),2,2)
     corr.angle = acos(corr.prof)/2
-    corr.coef = list((cos(corr.angle) * coef[,1] + sin(corr.angle) * coef[,2]) * rad * exp(- 0.5i * fshift/2),
-                     (cos(corr.angle) * coef[,1] - sin(corr.angle) * coef[,2]) * rad * exp(  0.5i * fshift/2))
+    M11 =   cos(corr.angle) * rad * exp(- 0.5i * fshift);
+    M12 =   sin(corr.angle) * rad * exp(- 0.5i * fshift);
+    M21 =   cos(corr.angle) * rad * exp(  0.5i * fshift);
+    M22 = - sin(corr.angle) * rad * exp(  0.5i * fshift);
   } else if (corr.method == "mixed") { # nice mix of two random variables
     # ang = asin(corr)/2
     # M = matrix(c(cos(ang),sin(ang),sin(ang),cos(ang)),2,2)
     corr.angle = asin(corr.prof)/2
     corr.coef = list((cos(corr.angle) * coef[,1] + sin(corr.angle) * coef[,2]) * rad * exp(- 0.5i * fshift),
                      (sin(corr.angle) * coef[,1] + cos(corr.angle) * coef[,2]) * rad * exp(  0.5i * fshift))
+    M11 =   cos(corr.angle) * rad * exp(- 0.5i * fshift);
+    M12 =   sin(corr.angle) * rad * exp(- 0.5i * fshift);
+    M21 =   sin(corr.angle) * rad * exp(  0.5i * fshift);
+    M22 =   cos(corr.angle) * rad * exp(  0.5i * fshift);
   } else if (corr.method == "top") { # top surface always the same
     # ang = asin(corr)
     # M = matrix(c(1,0,sin(ang),cos(ang)),2,2)
     corr.angle = asin(corr.prof)
     corr.coef = list((coef[,1]) * rad,
                      (sin(corr.angle) * coef[,1] + cos(corr.angle) * coef[,2]) * rad * exp(  1i * fshift))
+    M11 =                 1 * rad * 1;
+    M12 =                 0 * rad * 1;
+    M21 =   sin(corr.angle) * rad * exp(    1i * fshift);
+    M22 =   cos(corr.angle) * rad * exp(    1i * fshift);
   } else {
     stop("unknown corr.method")
   }
+  
+  corr.coef = list(M11 * coef[,1] + M12 * coef[,2],
+                   M21 * coef[,1] + M22 * coef[,2])
 
   fields = lapply(corr.coef, function(x) {
     dim(x) = dims
@@ -172,14 +185,16 @@ fracture_matrix = function(
   })
   
   ret = list()
-  c1 = sum((power)[sel])
-  c2 = sum((power * corr.prof)[sel])
-  cov.theoretical = matrix(c(c1,c2,c2,c1),2,2)
+  c11 = sum(M11 * Conj(M11) + M12 * Conj(M12))
+  c12 = sum(M11 * Conj(M21) + M12 * Conj(M22))
+  c21 = sum(M21 * Conj(M11) + M22 * Conj(M12))
+  c22 = sum(M21 * Conj(M21) + M22 * Conj(M22))
+  cov.theoretical = matrix(c(c11,c12,c21,c22),2,2)
   cov.final = cov(cbind(as.vector(fields[[1]]),as.vector(fields[[2]])))
   # E(((f1+f2)/2)^2) = E(f1^2 + f2^2 + 2*f1*f2)/4
-  var.midline = (c1+c2)/2
+  var.midline = Re((c11+c12+c21+22)/4)
   # E((f1-f2)^2) = E(f1^2 + f2^2 - 2*f1*f2)
-  var.diff = (c1-c2)*2
+  var.diff = Re(c11-c12-c21+c22)
   var.prime = sum((power*(2*pi*freq)^2)[sel])
   if (missing(gap)) {
     if (!missing(closed)) {
