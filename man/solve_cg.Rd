@@ -4,7 +4,15 @@
 \alias{solve_cg}
 \title{Simple Conjugate Gradient implementation}
 \usage{
-solve_cg(A, b, itmax = 800, epsjump = 1e-06, eps, x0 = rep(0, ncol(A)))
+solve_cg(
+  A,
+  b,
+  itmax = 800,
+  epsjump = 1e-06,
+  eps,
+  x0 = rep(0, ncol(A)),
+  print.every = 500
+)
 }
 \arguments{
 \item{A}{Matrix}

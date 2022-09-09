@@ -11,6 +11,8 @@ fracture_matrix(
   shift = rep(0, length(dims)),
   power.iso,
   power.spectrum = function(f) power.iso(sqrt(rowSums(f * f))),
+  cov.iso,
+  cov.structure = function(d) cov.iso(sqrt(rowSums(d * d))),
   corr.profile = function(k) 0,
   closed = 0.1,
   gap,
