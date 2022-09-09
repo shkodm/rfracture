@@ -95,6 +95,8 @@ fracture_matrix = function(
     shift = rep(0,length(dims)),
     power.iso,
     power.spectrum = function(f) power.iso(sqrt(rowSums(f*f))),
+    cov.iso,
+    cov.structure = function(d) cov.iso(sqrt(rowSums(d*d))),
     corr.profile = function(k) 0,
     closed = 0.1, gap, seed, corr.method = c("midline","top","mixed"), length_one = FALSE, gauss.order = 1) {
   span = as.matrix(span)
@@ -115,26 +117,46 @@ fracture_matrix = function(
   coef = matrix(0, nrow(f_per), 2)
   coef[sel,] = ordered_rnorm_spectrum(f_per[sel,,drop=FALSE], k = 2, seed = seed, length_one = length_one)
 
-  if (gauss.order == 1) {
-    power[sel] = power.spectrum(f_per[sel,] %*% solve(t(period)))
-  } else {
-    q = statmod::gauss.quad(gauss.order)
-    qx = as.matrix(do.call(expand.grid,rep(list(q$nodes/2),n)))
-    qw = do.call(expand.grid,rep(list(q$weights/2),n))
-    qw = apply(qw,1,prod)
-    selpow = 0
-    self = t(f_per[sel,])
-    for (i in seq_len(nrow(qx))) {
-      selpow = selpow + qw[i]*power.spectrum(t(self + qx[i,]) %*% solve(t(period)))
+  do.cov   = ! (missing(cov.iso) && missing(cov.structure))
+  do.power = ! (missing(power.iso) && missing(power.spectrum))
+  if (do.cov) {
+    if (do.power) stop("supplied both coveriance structure and power spectrum")
+    d = ((p %*% period + 0.5) %% 1 - 0.5) %*% solve(period)
+    cov.field = cov.structure(d)
+    dim(cov.field) = dims
+    
+    power = fft(cov.field)
+    power = power / prod(dims)
+    print(c(range(Re(power)),range(Im(power))))
+    power = Re(power)
+    power = ifelse(power > 0, power, 0)
+    power = as.vector(power)
+    power[!sel] = 0
+    power_mult = 1
+    power = power * power_mult
+  } else if (do.power) {
+    if (gauss.order == 1) {
+      power[sel] = power.spectrum(f_per[sel,] %*% solve(t(period)))
+    } else {
+      q = statmod::gauss.quad(gauss.order)
+      qx = as.matrix(do.call(expand.grid,rep(list(q$nodes/2),n)))
+      qw = do.call(expand.grid,rep(list(q$weights/2),n))
+      qw = apply(qw,1,prod)
+      selpow = 0
+      self = t(f_per[sel,])
+      for (i in seq_len(nrow(qx))) {
+        selpow = selpow + qw[i]*power.spectrum(t(self + qx[i,]) %*% solve(t(period)))
+      }
+      power[sel] = selpow
     }
-    power[sel] = selpow
-  }
-  power[1] = 0
-  if (any(power < 0)) stop("Negative power spectrum")
-  
-  power_mult = 1/det(period)
-  power = power * power_mult
-  
+    power[1] = 0
+    if (any(power < 0)) stop("Negative power spectrum")
+    
+    power_mult = 1/det(period)
+    power = power * power_mult
+  } else {
+    stop("neither covariance structure nor power spectrum supplied")
+  }  
   freq = sqrt(rowSums(f^2))
   wavelength = 1/freq
   
@@ -228,3 +250,26 @@ fracture_matrix = function(
   class(ret) = "fracture_matrix"
   ret
 }
+
+
+#' Calculate Matern covariance function and its power spectrum
+#' 
+#' @param r distance
+#' @param nu smoothness parameter
+#' @param l scale
+#' @export
+matern = function(r, nu, l=1) {
+  a = sqrt(2*nu)*r/l
+  ifelse(a > 0,
+    2^(1-nu)/gamma(nu)*(a)^nu*besselK(a,nu = nu),
+    1
+  )
+}
+
+#' @rdname matern
+#' @export
+matern.f = function(s, nu, l=1, D) {
+  (2*sqrt(pi))^D*gamma(nu+D/2)*(2*nu)^nu / (gamma(nu)*l^(2*nu))*(2*nu/l^2 + 4*pi^2*s^2)^(-(nu+D/2))
+}
+
+
