@@ -98,7 +98,7 @@ fracture_matrix = function(
     cov.iso,
     cov.structure = function(d) cov.iso(sqrt(rowSums(d*d))),
     corr.profile = function(k) 0,
-    closed = 0.1, gap, seed, corr.method = c("midline","top","mixed"), length_one = FALSE, gauss.order = 1) {
+    closed = 0.1, gap, seed, corr.method = c("midline","top","mixed"), length_one = FALSE, gauss.order = 1, cov.offsets.number = 5) {
   span = as.matrix(span)
   period = as.matrix(period)
   corr.method = match.arg(corr.method)
@@ -121,9 +121,17 @@ fracture_matrix = function(
   do.power = ! (missing(power.iso) && missing(power.spectrum))
   if (do.cov) {
     if (do.power) stop("supplied both coveriance structure and power spectrum")
-    d = ((p %*% period + 0.5) %% 1 - 0.5) %*% solve(period)
-    cov.field = cov.structure(d)
+    offsets = expand_seq(rep(cov.offsets.number*2,length(dims)),seq_circ)
+    cov.field = 0
+    for (i in 1:nrow(offsets)) {
+      d = p - as.matrix(offsets[rep(i,nrow(p)),]) %*% period
+      c = cov.structure(d)
+      cov.field = cov.field + c
+    }
+#    d = ((p %*% solve(period) + 0.5) %% 1 - 0.5) %*% period
+#    cov.field = cov.structure(d)
     dim(cov.field) = dims
+#    image(cov.field)
     
     power = fft(cov.field)
     power = power / prod(dims)
