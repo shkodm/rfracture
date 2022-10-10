@@ -1,4 +1,4 @@
-#' Generate a 3D fracture geometry with trianglar mesh
+#' Generate a 3D fracture geometry with triangular mesh
 #' 
 #' @param width linear dimension of the square cut of the fracture
 #' @param refine refinement level
