@@ -215,10 +215,10 @@ fracture_matrix = function(
   })
   
   ret = list()
-  c11 = sum(M11 * Conj(M11) + M12 * Conj(M12))
-  c12 = sum(M11 * Conj(M21) + M12 * Conj(M22))
-  c21 = sum(M21 * Conj(M11) + M22 * Conj(M12))
-  c22 = sum(M21 * Conj(M21) + M22 * Conj(M22))
+  c11 = Re(sum(M11 * Conj(M11) + M12 * Conj(M12)))
+  c12 = Re(sum(M11 * Conj(M21) + M12 * Conj(M22)))
+  c21 = Re(sum(M21 * Conj(M11) + M22 * Conj(M12)))
+  c22 = Re(sum(M21 * Conj(M21) + M22 * Conj(M22)))
   cov.theoretical = matrix(c(c11,c12,c21,c22),2,2)
   cov.final = cov(cbind(as.vector(fields[[1]]),as.vector(fields[[2]])))
   # E(((f1+f2)/2)^2) = E(f1^2 + f2^2 + 2*f1*f2)/4
