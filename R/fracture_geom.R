@@ -17,9 +17,12 @@
 #' if (require(rgl)) fracture3d(cut(ret))
 #'
 #' @export
-fracture_geom = function(width=1, refine=1, method=c("triangles","diagonals"), ...) {
+fracture_geom = function(width=1, refine=1, method=c("triangles","diagonals"), period = width, ...) {
   method = match.arg(method)
-  period = matrix(c(width,0,0,width),2,2)
+  if (length(period) == 1) period = rep(period,2)
+  if (length(period) == 2) period = matrix(c(period[1],0,0,period[2]),2,2)
+  if (!(inherits(period, "matrix") && identical(dim(period),c(2L,2L)))) stop("Wrong period argument")
+  
   if (method == "triangles") {
     n = 6 * refine
     m = 5 * refine
