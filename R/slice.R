@@ -116,7 +116,6 @@ slice = function(
   
   if (max(abs(obj$points[p_on_edge,by] - level)) > eps) stop("error in slice above ", eps)
   
-  
   if (flatten == "edge") {
     flat = on_edge
   } else if (flatten == "above") {
@@ -201,7 +200,7 @@ slice = function(
   obj$border = c(obj$border[!esel], edge_b)
   obj$vertex = rbind(obj$vertex, vertex)
 
-  if (type == "edge") {
+  if (type == "equal") {
     psel = on_edge
   } else if (type == "above") {
     psel = on_edge | above
