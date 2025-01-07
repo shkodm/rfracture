@@ -24,7 +24,7 @@ expand_seq = function(x, fun=seq_len, matrix=TRUE) {
 #' ordered_rnorm_spectrum(f, seed=123)
 #' @import stats
 #' @export
-ordered_rnorm_spectrum = function(f, k=2, seed, length_one=FALSE) {
+ordered_rnorm_spectrum = function(f, k=2, seed, length_one=FALSE, fracture_coeffs_generator=NULL) {
   if (! missing(seed)) set.seed(seed)
   f = apply(f,2,round)
   if (inherits(f,"matrix")) f = as.data.frame(f)
@@ -44,6 +44,13 @@ ordered_rnorm_spectrum = function(f, k=2, seed, length_one=FALSE) {
   ftot$j = seq_len(nrow(ftot))
   ftot_op$k = seq_len(nrow(ftot_op))
   fmerge = merge(merge(ftot_op,ftot),f)
+  if(is.null(fracture_coeffs_generator)) {
+        # Original random generation
+        RN = matrix(rnorm(totsize * k * 2), 2, k*totsize)
+    } else {
+        # Get values from generator for specified fracture
+        RN = fracture_coeffs_generator(seed, totsize, k)
+    }
   RN = matrix(rnorm(totsize * k * 2), 2, k*totsize)
   RN = RN[1,] + 1i * RN[2,]
   RN = t(matrix(RN, k, totsize))
@@ -98,7 +105,9 @@ fracture_matrix = function(
     cov.iso,
     cov.structure = function(d) cov.iso(sqrt(rowSums(d*d))),
     corr.profile = function(k) 0,
-    closed = 0.1, gap, seed, corr.method = c("midline","top","mixed"), length_one = FALSE, gauss.order = 1, cov.offsets.number = 5) {
+    closed = 0.1, gap, seed, corr.method = c("midline","top","mixed"), length_one = FALSE, gauss.order = 1, cov.offsets.number = 5,
+    fracture_coeffs_generator = NULL
+    ) {
   span = as.matrix(span)
   period = as.matrix(period)
   corr.method = match.arg(corr.method)
@@ -115,7 +124,7 @@ fracture_matrix = function(
   f_per = f %*% t(period)
   sel = rowSums(abs(round(f_per) - f_per) > 1e-6) == 0
   coef = matrix(0, nrow(f_per), 2)
-  coef[sel,] = ordered_rnorm_spectrum(f_per[sel,,drop=FALSE], k = 2, seed = seed, length_one = length_one)
+  coef[sel,] = ordered_rnorm_spectrum(f_per[sel,,drop=FALSE], k = 2, seed = seed, length_one = length_one, fracture_coeffs_generator = fracture_coeffs_generator)
 
   do.cov   = ! (missing(cov.iso) && missing(cov.structure))
   do.power = ! (missing(power.iso) && missing(power.spectrum))
