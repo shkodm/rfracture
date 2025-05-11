@@ -51,7 +51,7 @@ ordered_rnorm_spectrum = function(f, k=2, seed, length_one=FALSE, fracture_coeff
         # Get values from generator for specified fracture
         RN = fracture_coeffs_generator(seed, totsize, k)
     }
-  RN = matrix(rnorm(totsize * k * 2), 2, k*totsize)
+  # RN = matrix(rnorm(totsize * k * 2), 2, k*totsize)
   RN = RN[1,] + 1i * RN[2,]
   RN = t(matrix(RN, k, totsize))
   
